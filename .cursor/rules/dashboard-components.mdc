@@ -1,0 +1,62 @@
+---
+description: ダッシュボードコンポーネントの実装パターン
+globs:
+  - "app/dashboard/**/*.tsx"
+  - "components/**/*.tsx"
+alwaysApply: false
+---
+
+# ダッシュボードコンポーネント実装ガイド
+
+ダッシュボードページとコンポーネントを実装する際のパターン。
+
+## 基本構造
+
+```typescript
+'use client';
+
+import { useEffect, useState } from 'react';
+
+export default function DashboardComponent() {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch('/api/your-endpoint');
+        const result = await response.json();
+        
+        if (result.success) {
+          setData(result.data);
+        } else {
+          setError(result.error);
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Unknown error');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  if (loading) return <div>読み込み中...</div>;
+  if (error) return <div className="text-red-500">エラー: {error}</div>;
+
+  return (
+    <div className="container mx-auto p-8">
+      {/* コンテンツ */}
+    </div>
+  );
+}
+```
+
+## Tailwind CSS の使用
+
+- すべてのスタイリングは Tailwind CSS を使用
+- カスタムクラスは `globals.css` に定義
+- レスポンシブデザインを考慮（`md:`, `lg:` プレフィックス）
