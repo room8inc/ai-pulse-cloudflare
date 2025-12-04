@@ -1,0 +1,186 @@
+# Cursor Rules for AI News Aggregator Project
+
+## プロジェクト概要
+このプロジェクトは Next.js 14 (App Router) + Supabase を使用した AI ニュースアグリゲーターです。
+Cursor での開発効率を最大化するための行動指針を定義します。
+
+---
+
+## 開発原則
+
+### 1. ファイル構造の遵守
+- `/app/api/` 配下に API ルートを配置
+- `/app/dashboard/` 配下にダッシュボードページを配置
+- 各 API ルートは単一責任の原則に従う
+- 共通ロジックは `/lib/` または `/utils/` に配置
+
+### 2. TypeScript の使用
+- すべてのファイルは TypeScript を使用
+- 型定義は明示的に記述
+- `any` 型の使用は避ける（やむを得ない場合は `@ts-ignore` とコメントを併記）
+
+### 3. API ルートの設計
+- 各 API ルートは独立して動作可能にする
+- エラーハンドリングを必ず実装
+- レスポンスは統一された形式で返す
+- ログ出力を適切に行う（Supabase の `logs` テーブルに記録）
+
+### 4. Supabase との連携
+- データベース操作は Supabase Client を使用
+- トランザクションが必要な場合は適切に処理
+- 環境変数から接続情報を取得（ハードコーディング禁止）
+
+### 5. 外部 API の呼び出し
+- レート制限を考慮した実装
+- リトライロジックの実装
+- タイムアウト設定
+- エラー時の適切なフォールバック
+
+### 6. コードスタイル
+- ESLint / Prettier の設定に従う
+- 関数名は動詞で始める（`fetch-*`, `summarize-*`, `push-*` など）
+- コメントは日本語で記述（ビジネスロジックの説明）
+- 複雑な処理には JSDoc コメントを追加
+
+### 7. 環境変数の管理
+- `.env.local` に機密情報を保存
+- `.env.example` に必要な環境変数のリストを記載
+- 環境変数の取得は `process.env` を使用し、デフォルト値は適切に設定
+
+### 8. エラーハンドリング
+- try-catch ブロックでエラーを捕捉
+- エラーログを Supabase の `logs` テーブルに記録
+- ユーザー向けエラーメッセージは分かりやすく
+- 開発環境では詳細なエラー情報を表示
+
+### 9. パフォーマンス
+- 大量データの取得時はページネーションを実装
+- 不要な再レンダリングを避ける（React.memo の適切な使用）
+- データベースクエリはインデックスを考慮
+- キャッシュを適切に活用（必要に応じて）
+- トレンド分析は定期的に実行し、結果を `trends` テーブルに保存（リアルタイム計算を避ける）
+- 時系列データの集計時は適切な時間範囲でクエリを分割
+
+### 10. セキュリティ
+- API ルートは認証が必要な場合は適切に実装
+- SQL インジェクション対策（Supabase のクエリビルダーを使用）
+- XSS 対策（サニタイズ処理）
+- 環境変数の漏洩に注意
+
+---
+
+## コーディング規約
+
+### API ルートのテンプレート
+```typescript
+import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
+
+export async function GET(request: NextRequest) {
+  try {
+    // 処理を実装
+    return NextResponse.json({ success: true, data: result });
+  } catch (error) {
+    console.error('Error:', error);
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  }
+}
+```
+
+### データベース操作のパターン
+```typescript
+const supabase = createClient(
+  process.env.SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_KEY!
+);
+
+const { data, error } = await supabase
+  .from('table_name')
+  .select('*')
+  .eq('column', 'value');
+
+if (error) throw error;
+```
+
+### 外部 API 呼び出しのパターン
+```typescript
+const response = await fetch(url, {
+  headers: { 'Authorization': `Bearer ${token}` },
+  signal: AbortSignal.timeout(10000), // 10秒タイムアウト
+});
+
+if (!response.ok) {
+  throw new Error(`API Error: ${response.status}`);
+}
+```
+
+### トレンド分析のパターン
+```typescript
+// 過去N日間のデータと比較してトレンドを算出
+const calculateTrend = async (days: number = 7) => {
+  const now = new Date();
+  const pastDate = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+  
+  // 現在の期間と過去の期間のデータを取得
+  const { data: current } = await supabase
+    .from('raw_events')
+    .select('*')
+    .gte('created_at', pastDate.toISOString());
+  
+  const { data: previous } = await supabase
+    .from('raw_events')
+    .select('*')
+    .gte('created_at', pastDate.toISOString())
+    .lt('created_at', pastDate.toISOString());
+  
+  // 増加率を計算
+  const growthRate = ((current.length - previous.length) / previous.length) * 100;
+  
+  return { growthRate, current, previous };
+};
+```
+
+### 時系列データの扱い
+- 日付/時刻は UTC で統一して保存
+- トレンド分析時はタイムゾーンを考慮
+- 大量データの集計時はインデックスを活用
+- 必要に応じて集計結果をキャッシュ（`trends` テーブルに保存）
+
+---
+
+## 禁止事項
+
+- ハードコーディングされた認証情報
+- 無限ループやメモリリークを引き起こす可能性のあるコード
+- エラーハンドリングのない外部 API 呼び出し
+- 型安全性を無視した実装
+- コメントのない複雑なロジック
+
+---
+
+## 推奨事項
+
+- 各 API ルートに単体テストを追加（可能な範囲で）
+- 定期的なコードレビュー
+- ドキュメントの更新（README.md の維持）
+- パフォーマンスモニタリング
+- ログの定期的な確認
+
+---
+
+## 開発フロー
+
+1. 機能追加時は、まず API ルートの設計を確認
+2. データベーススキーマの変更が必要な場合は、マイグレーションを準備
+3. 実装後、ローカル環境でテスト
+4. エラーハンドリングとログ出力を確認
+5. 必要に応じてドキュメントを更新
+
+---
+
+## 参考情報
+
+- Next.js 14 App Router: https://nextjs.org/docs/app
+- Supabase: https://supabase.com/docs
+- TypeScript: https://www.typescriptlang.org/docs/
+
