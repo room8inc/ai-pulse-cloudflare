@@ -116,13 +116,15 @@ function extractDynamicKeywords(
     const modelCount = new Map<string, number>();
     
     // モデル名のパターン（正規表現）
+    // 注意: 固定リストではなく、正規表現で動的に検出するため、
+    // 新しいモデル名（GPT-6、Claude-5など）も自動的に検出可能
     const modelPatterns = [
-      /GPT[- ]?(\d+(?:\.\d+)?(?:o|turbo|mini)?)/gi,  // GPT-4, GPT-4o, GPT-3.5, GPT-5.1
-      /Claude[- ]?(\d+(?:\.\d+)?(?:sonnet|opus|haiku)?)/gi,  // Claude-3, Claude-3.5, Claude-3.5-sonnet
-      /Gemini[- ]?(Pro|Ultra|Flash|(\d+(?:\.\d+)?)?)/gi,  // Gemini Pro, Gemini Ultra, Gemini 2.0
-      /Llama[- ]?(\d+(?:\.\d+)?)/gi,  // Llama-2, Llama-3, Llama-3.1
-      /Mistral[- ]?(\d+(?:\.\d+)?(?:B|Large)?)/gi,  // Mistral-7B, Mistral-Large
-      /Grok[- ]?(\d+(?:\.\d+)?)?/gi,  // Grok, Grok-2
+      /GPT[- ]?(\d+(?:\.\d+)?(?:o|turbo|mini)?)/gi,  // GPT-4, GPT-4o, GPT-3.5, GPT-5.1, GPT-6など
+      /Claude[- ]?(\d+(?:\.\d+)?(?:sonnet|opus|haiku)?)/gi,  // Claude-3, Claude-3.5, Claude-4, Claude-4.5など
+      /Gemini[- ]?(Pro|Ultra|Flash|(\d+(?:\.\d+)?)?)/gi,  // Gemini Pro, Gemini Ultra, Gemini 2.0など
+      /Llama[- ]?(\d+(?:\.\d+)?)/gi,  // Llama-2, Llama-3, Llama-3.1, Llama-4など
+      /Mistral[- ]?(\d+(?:\.\d+)?(?:B|Large)?)/gi,  // Mistral-7B, Mistral-Largeなど
+      /Grok[- ]?(\d+(?:\.\d+)?)?/gi,  // Grok, Grok-2など
     ];
 
     for (const event of events) {
