@@ -49,7 +49,20 @@ export async function GET(request: NextRequest) {
     // ブログ候補をDBに登録
     const createdIdeas: any[] = [];
     for (const idea of blogIdeas) {
+      // IDを生成
+      const generateId = () => {
+        const randomBytes = new Uint8Array(16);
+        crypto.getRandomValues(randomBytes);
+        return Array.from(randomBytes)
+          .map(b => b.toString(16).padStart(2, '0'))
+          .join('')
+          .toLowerCase();
+      };
+
+      const ideaId = generateId();
+
       const { error } = supabase.from('blog_ideas').insert({
+        id: ideaId,
         title: idea.title,
         summary: idea.summary,
         content: idea.content,
@@ -63,7 +76,9 @@ export async function GET(request: NextRequest) {
       });
 
       if (!error) {
-        createdIdeas.push(idea);
+        createdIdeas.push({ ...idea, id: ideaId });
+      } else {
+        console.error('Error inserting blog idea:', error);
       }
     }
 

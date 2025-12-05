@@ -70,8 +70,21 @@ export async function GET(request: NextRequest) {
             continue;
           }
 
+          // IDを事前に生成（SQLiteのデフォルト値と同じ形式）
+          const generateId = () => {
+            const randomBytes = new Uint8Array(16);
+            crypto.getRandomValues(randomBytes);
+            return Array.from(randomBytes)
+              .map(b => b.toString(16).padStart(2, '0'))
+              .join('')
+              .toLowerCase();
+          };
+
+          const rawEventId = generateId();
+
           // raw_eventsテーブルに挿入
           const { error: rawEventError } = supabase.from('raw_events').insert({
+            id: rawEventId,
             source: item.source,
             source_type: 'community',
             title: item.title,
@@ -100,6 +113,7 @@ export async function GET(request: NextRequest) {
             url: item.url,
             author: item.author || null,
             score: item.score,
+            raw_event_id: rawEventId,
             published_at: item.publishedAt.toISOString(),
             metadata: JSON.stringify({
               source_name: source.name,
