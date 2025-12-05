@@ -24,6 +24,9 @@ export async function GET(request: NextRequest) {
   };
 
   try {
+    // 最新7日間のみ取得（古い情報を除外）
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
     // 各RSSフィードを取得
     for (const feed of OFFICIAL_RSS_FEEDS) {
       try {
@@ -55,6 +58,16 @@ export async function GET(request: NextRequest) {
             if (isNaN(publishedAt.getTime())) {
               publishedAt = null;
             }
+          }
+          
+          // 最新7日間の情報のみ取得（古い情報を除外）
+          if (publishedAt && publishedAt < sevenDaysAgo) {
+            continue; // 7日より古い情報はスキップ
+          }
+          
+          // 日付がない場合は、現在時刻から7日以内と仮定（RSSフィードの最新情報として扱う）
+          if (!publishedAt) {
+            publishedAt = new Date(); // 日付がない場合は現在時刻を使用
           }
 
           // raw_eventsテーブルに挿入

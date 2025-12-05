@@ -47,7 +47,10 @@ export default function DashboardPage() {
         const ideasResponse = await fetch('/api/dashboard/blog-ideas');
         const ideasResult = await ideasResponse.json();
         if (ideasResult.success) {
-          setBlogIdeas(ideasResult.data);
+          setBlogIdeas(ideasResult.data || []);
+        } else {
+          console.error('Failed to fetch blog ideas:', ideasResult.error);
+          setBlogIdeas([]);
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Unknown error');

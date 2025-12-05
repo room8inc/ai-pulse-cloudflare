@@ -44,11 +44,16 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // AI関連の検索クエリ
+    // AI関連の検索クエリ（より具体的で、スパムを除外）
     const queries = [
-      '#GPT4 OR #Claude OR #Anthropic OR #OpenAI',
-      '#LLM OR #MachineLearning OR #AI',
-      'GPT-4 OR Claude 3 OR OpenAI',
+      // 最新モデルに関する具体的な検索
+      '(GPT-5 OR GPT-5.1 OR "GPT 5") -spam -promo -giveaway -free lang:en',
+      '(Claude-4 OR Claude-4.5 OR "Claude 4") -spam -promo -giveaway -free lang:en',
+      '(Anthropic OR OpenAI OR "Google DeepMind") (announcement OR release OR update) -spam lang:en',
+      // 技術的な議論
+      '(LLM OR "large language model") (benchmark OR performance OR evaluation) -spam lang:en',
+      // 新機能・アップデート
+      '(AI OR "artificial intelligence") (new feature OR update OR release) -spam -promo lang:en',
     ];
 
     for (const query of queries) {
@@ -74,6 +79,29 @@ export async function GET(request: NextRequest) {
         results.total += tweets.length;
 
         for (const tweet of tweets) {
+          // 品質フィルタリング
+          const metrics = tweet.public_metrics || {};
+          const likeCount = metrics.like_count || 0;
+          const retweetCount = metrics.retweet_count || 0;
+          const replyCount = metrics.reply_count || 0;
+          
+          // エンゲージメントが低すぎる投稿を除外（スパムの可能性）
+          const totalEngagement = likeCount + retweetCount + replyCount;
+          if (totalEngagement < 3) {
+            continue; // エンゲージメントが3未満の投稿はスキップ
+          }
+          
+          // スパムキーワードをチェック
+          const text = (tweet.text || '').toLowerCase();
+          const spamKeywords = [
+            'click here', 'free money', 'make money', 'earn $', 'get rich',
+            'follow me', 'dm me', 'link in bio', 'check out my', 'promo code',
+            'giveaway', 'win free', 'limited time', 'act now', 'don\'t miss',
+          ];
+          if (spamKeywords.some(keyword => text.includes(keyword))) {
+            continue; // スパムキーワードを含む投稿はスキップ
+          }
+          
           // 重複チェック
           const tweetUrl = `https://twitter.com/i/web/status/${tweet.id}`;
           const { data: existing } = supabase

@@ -57,6 +57,16 @@ export async function GET(request: NextRequest) {
 
         // 各アイテムをraw_eventsとuser_voicesテーブルに保存
         for (const item of items) {
+          // 品質フィルタリング：スコアが低すぎる投稿を除外
+          if (item.score !== undefined && item.score < 5) {
+            continue; // スコアが5未満の投稿はスキップ（低品質・スパムの可能性）
+          }
+          
+          // タイトルが短すぎる、または空の場合はスキップ
+          if (!item.title || item.title.length < 10) {
+            continue;
+          }
+          
           // 重複チェック（URLが既に存在するか）
           const { data: existing } = supabase
             .from('raw_events')
