@@ -20,10 +20,27 @@ export async function GET(request: NextRequest) {
     const bearerToken = process.env.TWITTER_BEARER_TOKEN;
 
     if (!bearerToken) {
+      // 認証情報が未設定の場合は、フォールバック動作として空の結果を返す
+      // ログに警告を記録
+      supabase.from('logs').insert({
+        level: 'warning',
+        endpoint: '/api/fetch-twitter',
+        message: 'TWITTER_BEARER_TOKEN is not set. Twitter data fetching skipped.',
+        metadata: JSON.stringify({
+          note: 'Twitter API認証情報を設定すると、Twitter/X投稿を取得できます',
+        }),
+      });
+
       return NextResponse.json({
-        success: false,
-        error: 'TWITTER_BEARER_TOKEN is not set',
-        message: 'Twitter API認証情報が設定されていません',
+        success: true,
+        message: 'fetch-twitter skipped (no authentication)',
+        data: {
+          total: 0,
+          success: 0,
+          failed: 0,
+          errors: [],
+        },
+        note: 'Twitter API認証情報が設定されていません。設定方法については後述の指示を参照してください。',
       });
     }
 
@@ -70,8 +87,21 @@ export async function GET(request: NextRequest) {
             continue;
           }
 
+          // IDを生成
+          const generateId = () => {
+            const randomBytes = new Uint8Array(16);
+            crypto.getRandomValues(randomBytes);
+            return Array.from(randomBytes)
+              .map(b => b.toString(16).padStart(2, '0'))
+              .join('')
+              .toLowerCase();
+          };
+
+          const rawEventId = generateId();
+
           // raw_eventsとuser_voicesに保存
           const { error: rawEventError } = supabase.from('raw_events').insert({
+            id: rawEventId,
             source: 'twitter',
             source_type: 'twitter',
             title: tweet.text?.substring(0, 200) || '',
