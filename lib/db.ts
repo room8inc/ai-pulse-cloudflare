@@ -133,6 +133,14 @@ let dbInstance: DBClient | null = null;
 export function createSupabaseClient() {
   if (!dbInstance) {
     dbInstance = new DBClient();
+    // 初回接続時にスキーマを確認（テーブルが存在しない場合は警告）
+    try {
+      dbInstance.from('raw_events').select('id').all();
+    } catch (error) {
+      console.warn(
+        'Database tables may not be initialized. Please run /api/init-db first.'
+      );
+    }
   }
   return dbInstance;
 }
