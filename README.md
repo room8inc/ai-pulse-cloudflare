@@ -51,7 +51,7 @@ Next.js (App Router)
 
  │
 
-Supabase
+SQLite (ローカルデータベース)
 
  ├─ raw_events             ← 各クローラーの生データ
 
@@ -152,7 +152,7 @@ Supabase
 
 - **Next.js 14 / App Router**
 
-- **Supabase**
+- **SQLite** (better-sqlite3) - 完全無料・ローカル完結
 
 - **Vercel Cron**
 
@@ -173,8 +173,9 @@ Supabase
 ### 1. 環境変数
 
 ```bash
-SUPABASE_URL=
-SUPABASE_SERVICE_KEY=
+# SQLiteは環境変数不要（完全無料・ローカル完結）
+
+# AI APIs（後で設定）
 OPENAI_API_KEY=
 ANTHROPIC_API_KEY=
 GEMINI_API_KEY=

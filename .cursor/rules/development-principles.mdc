@@ -5,7 +5,7 @@ alwaysApply: true
 
 # AI News Aggregator プロジェクト - 開発原則
 
-このプロジェクトは Next.js 14 (App Router) + Supabase を使用した AI ニュースアグリゲーターです。
+このプロジェクトは Next.js 14 (App Router) + SQLite を使用した AI ニュースアグリゲーターです。
 Cursor での開発効率を最大化するための行動指針を定義します。
 
 ## 開発原則
@@ -25,12 +25,13 @@ Cursor での開発効率を最大化するための行動指針を定義しま�
 - 各 API ルートは独立して動作可能にする
 - エラーハンドリングを必ず実装
 - レスポンスは統一された形式で返す
-- ログ出力を適切に行う（Supabase の `logs` テーブルに記録）
+- ログ出力を適切に行う（SQLite の `logs` テーブルに記録）
 
-### 4. Supabase との連携
-- データベース操作は Supabase Client を使用
+### 4. SQLite との連携
+- データベース操作は `lib/db.ts` の `createSupabaseClient()` を使用（Supabase互換API）
+- SQLiteはローカルファイル（`data/ai-pulse.db`）に保存
+- 環境変数不要（完全無料・ローカル完結）
 - トランザクションが必要な場合は適切に処理
-- 環境変数から接続情報を取得（ハードコーディング禁止）
 
 ### 5. 外部 API の呼び出し
 - レート制限を考慮した実装
@@ -51,7 +52,7 @@ Cursor での開発効率を最大化するための行動指針を定義しま�
 
 ### 8. エラーハンドリング
 - try-catch ブロックでエラーを捕捉
-- エラーログを Supabase の `logs` テーブルに記録
+- エラーログを SQLite の `logs` テーブルに記録
 - ユーザー向けエラーメッセージは分かりやすく
 - 開発環境では詳細なエラー情報を表示
 
@@ -89,15 +90,22 @@ export async function GET(request: NextRequest) {
 
 ### データベース操作のパターン
 ```typescript
-const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_KEY!
-);
+import { createSupabaseClient } from '@/lib/db';
 
-const { data, error } = await supabase
-  .from('table_name')
+const db = createSupabaseClient();
+
+// 挿入
+const { data, error } = db.from('table_name').insert({
+  column: 'value'
+});
+
+if (error) throw error;
+
+// 取得
+const { data, error } = db.from('table_name')
   .select('*')
-  .eq('column', 'value');
+  .eq('column', 'value')
+  .all();
 
 if (error) throw error;
 ```
@@ -173,5 +181,5 @@ const calculateTrend = async (days: number = 7) => {
 ## 参考情報
 
 - Next.js 14 App Router: https://nextjs.org/docs/app
-- Supabase: https://supabase.com/docs
+- SQLite (better-sqlite3): https://github.com/WiseLibs/better-sqlite3
 - TypeScript: https://www.typescriptlang.org/docs/
