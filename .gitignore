@@ -26,6 +26,10 @@ yarn-error.log*
 .env*.local
 .env
 
+# Google Service Account keys
+*-*.json
+!package*.json
+
 # SQLite database
 data/
 *.db
