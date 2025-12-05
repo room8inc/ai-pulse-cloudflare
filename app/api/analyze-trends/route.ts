@@ -49,12 +49,20 @@ export async function GET(request: NextRequest) {
       .lt('created_at', sevenDaysAgo.toISOString())
       .all();
 
+    // Search Consoleの検索クエリを取得（ユーザーが実際に検索しているキーワード）
+    const { data: searchQueries } = supabase
+      .from('search_queries')
+      .select('*')
+      .gte('date', sevenDaysAgo.toISOString().split('T')[0])
+      .all();
+
     const trends: any[] = [];
 
-    // 急上昇キーワードの検出
+    // 急上昇キーワードの検出（Search Consoleの検索クエリも考慮）
     const risingKeywords = detectRisingKeywords(
       currentEvents || [],
-      previousEvents || []
+      previousEvents || [],
+      searchQueries || [] // Search Consoleの検索クエリを渡す
     );
 
     for (const { keyword, growthRate, currentCount } of risingKeywords) {

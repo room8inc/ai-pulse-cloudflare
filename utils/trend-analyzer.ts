@@ -41,66 +41,88 @@ export function countKeywordMentions(
 }
 
 /**
- * 急上昇キーワードを検出（固定リスト + 動的抽出）
+ * 急上昇キーワードを検出（データドリブン・動的抽出のみ）
+ * 固定リストに依存せず、実際のデータから検出
  */
 export function detectRisingKeywords(
   currentEvents: any[],
   previousEvents: any[],
+  searchQueries?: any[], // Search Consoleの検索クエリ（オプション）
   minGrowthRate: number = 50
 ): Array<{ keyword: string; growthRate: number; currentCount: number }> {
-  // 主要なAI関連キーワード（固定リスト）
-  // 注意: 具体的なモデル名（GPT-4、Claude-3など）は含めない
-  // モデル名は進化するため、動的抽出で検出する
-  const fixedKeywords = [
-    // 会社名・組織名
-    'OpenAI',
-    'Anthropic',
-    'Google',
-    'DeepMind',
-    'xAI',
-    'Meta',
-    'Microsoft',
-    // 技術カテゴリ
-    'LLM',
-    'Agent',
-    'RAG',
-    'Fine-tuning',
-    'Prompt Engineering',
-    'Multimodal',
-    'API',
-  ];
-
   const results: Array<{
     keyword: string;
     growthRate: number;
     currentCount: number;
   }> = [];
 
-  // 固定キーワードの分析
-  for (const keyword of fixedKeywords) {
-    const currentCount = countKeywordMentions(currentEvents, keyword);
-    const previousCount = countKeywordMentions(previousEvents, keyword);
-    const growthRate = calculateTrend(currentCount, previousCount);
-
-    if (growthRate >= minGrowthRate && currentCount > 0) {
-      results.push({ keyword, growthRate, currentCount });
+  // 1. Search Consoleの検索クエリを優先的に使用（ユーザーが実際に検索しているキーワード）
+  if (searchQueries && searchQueries.length > 0) {
+    const queryCounts = new Map<string, number>();
+    
+    // 検索クエリを集計（クリック数が多い順）
+    for (const query of searchQueries) {
+      const q = (query.query || '').toLowerCase().trim();
+      if (q.length > 2) {
+        queryCounts.set(q, (queryCounts.get(q) || 0) + (query.clicks || 0));
+      }
+    }
+    
+    // 検索クエリからキーワードを抽出して分析
+    for (const [query, clicks] of queryCounts.entries()) {
+      if (clicks >= 3) { // 3回以上クリックされたクエリ
+        // クエリを単語に分割
+        const words = query.split(/\s+/).filter(w => w.length > 2);
+        for (const word of words) {
+          const currentCount = countKeywordMentions(currentEvents, word);
+          const previousCount = countKeywordMentions(previousEvents, word);
+          const growthRate = calculateTrend(currentCount, previousCount);
+          
+          if (growthRate >= minGrowthRate && currentCount > 0) {
+            results.push({ 
+              keyword: word.charAt(0).toUpperCase() + word.slice(1), 
+              growthRate, 
+              currentCount 
+            });
+          }
+        }
+      }
     }
   }
 
-  // 動的キーワード抽出（タイトルから頻出語を抽出）
+  // 2. 実際のデータから動的にキーワードを抽出（タイトル・コンテンツから）
   const dynamicKeywords = extractDynamicKeywords(currentEvents, previousEvents);
   for (const { keyword, currentCount, previousCount } of dynamicKeywords) {
     const growthRate = calculateTrend(currentCount, previousCount);
     if (growthRate >= minGrowthRate && currentCount >= 3) {
-      // 既に固定リストに含まれている場合はスキップ
-      if (!fixedKeywords.some((k) => k.toLowerCase() === keyword.toLowerCase())) {
+      // 既に追加済みの場合はスキップ
+      if (!results.some((r) => r.keyword.toLowerCase() === keyword.toLowerCase())) {
         results.push({ keyword, growthRate, currentCount });
       }
     }
   }
 
-  // 成長率でソート
-  return results.sort((a, b) => b.growthRate - a.growthRate).slice(0, 20); // 上位20件
+  // 3. タイトルから重要な単語を抽出（名詞・固有名詞を優先）
+  const titleKeywords = extractTitleKeywords(currentEvents, previousEvents);
+  for (const { keyword, currentCount, previousCount } of titleKeywords) {
+    const growthRate = calculateTrend(currentCount, previousCount);
+    if (growthRate >= minGrowthRate && currentCount >= 5) {
+      // 既に追加済みの場合はスキップ
+      if (!results.some((r) => r.keyword.toLowerCase() === keyword.toLowerCase())) {
+        results.push({ keyword, growthRate, currentCount });
+      }
+    }
+  }
+
+  // 成長率でソート（成長率が同じ場合は言及数でソート）
+  return results
+    .sort((a, b) => {
+      if (b.growthRate !== a.growthRate) {
+        return b.growthRate - a.growthRate;
+      }
+      return b.currentCount - a.currentCount;
+    })
+    .slice(0, 30); // 上位30件
 }
 
 /**
@@ -237,7 +259,8 @@ function extractDynamicKeywords(
       );
       if (hasGpt5) {
         // GPT-5系が存在する場合、GPT-4以下（GPT-4o以外）を除外
-        if (name.match(/gpt[- ]?(1|2|3|4)$/) || name === 'gpt-4.1') {
+        // GPT-3.5、GPT-4、GPT-4.1などを除外（GPT-4oは残す）
+        if (name.match(/gpt[- ]?(1|2|3)/) || name === 'gpt-4' || name === 'gpt-4.1') {
           return true; // 除外
         }
         // GPT-4oは最新のGPT-4系なので残す
@@ -290,6 +313,65 @@ function extractDynamicKeywords(
           .split(' ')
           .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
           .join(' '),
+        currentCount,
+        previousCount,
+      });
+    }
+  }
+
+  return results;
+}
+
+/**
+ * タイトルから重要なキーワードを抽出（名詞・固有名詞を優先）
+ */
+function extractTitleKeywords(
+  currentEvents: any[],
+  previousEvents: any[]
+): Array<{ keyword: string; currentCount: number; previousCount: number }> {
+  const extractKeywords = (events: any[]): Map<string, number> => {
+    const keywordCount = new Map<string, number>();
+    const stopWords = new Set([
+      'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by',
+      'is', 'are', 'was', 'were', 'be', 'been', 'have', 'has', 'had', 'do', 'does', 'did',
+      'will', 'would', 'could', 'should', 'may', 'might', 'can', 'this', 'that', 'these', 'those',
+      'how', 'what', 'when', 'where', 'why', 'who', 'which', 'new', 'latest', 'announcing',
+      'introducing', 'release', 'update', 'blog', 'post', 'article',
+    ]);
+
+    for (const event of events) {
+      const title = (event.title || '').toLowerCase();
+      // タイトルから単語を抽出
+      const words = title
+        .replace(/[^\w\s]/g, ' ')
+        .split(/\s+/)
+        .filter((w) => w.length > 3 && !stopWords.has(w));
+
+      for (const word of words) {
+        // 大文字で始まる単語（固有名詞の可能性が高い）を優先
+        const originalWord = (event.title || '').split(/\s+/).find((w: string) => 
+          w.toLowerCase() === word && /^[A-Z]/.test(w)
+        );
+        
+        const keyword = originalWord || (word.charAt(0).toUpperCase() + word.slice(1));
+        keywordCount.set(keyword, (keywordCount.get(keyword) || 0) + 1);
+      }
+    }
+
+    return keywordCount;
+  };
+
+  const currentKeywords = extractKeywords(currentEvents);
+  const previousKeywords = extractKeywords(previousEvents);
+
+  const results: Array<{ keyword: string; currentCount: number; previousCount: number }> = [];
+
+  // 現在の期間で5回以上出現したキーワードを抽出
+  for (const [keyword, currentCount] of currentKeywords.entries()) {
+    if (currentCount >= 5) {
+      const previousCount = previousKeywords.get(keyword) || 0;
+      results.push({
+        keyword,
         currentCount,
         previousCount,
       });
