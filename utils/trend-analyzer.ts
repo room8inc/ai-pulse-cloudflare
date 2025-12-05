@@ -225,8 +225,54 @@ function extractDynamicKeywords(
 
   const results: Array<{ keyword: string; currentCount: number; previousCount: number }> = [];
 
-  // モデル名を追加（1回以上出現したもの）
+  // 古いモデルを除外する（最新モデルを優先）
+  const excludeOldModels = (modelName: string): boolean => {
+    const name = modelName.toLowerCase();
+    
+    // GPT系の処理
+    if (name.includes('gpt')) {
+      // GPT-5系が存在する場合は、GPT-4以下を除外（GPT-4oは最新のGPT-4系なので残す）
+      const hasGpt5 = Array.from(currentModels.keys()).some(m => 
+        m.toLowerCase().match(/gpt[- ]?5/)
+      );
+      if (hasGpt5) {
+        // GPT-5系が存在する場合、GPT-4以下（GPT-4o以外）を除外
+        if (name.match(/gpt[- ]?(1|2|3|4)$/) || name === 'gpt-4.1') {
+          return true; // 除外
+        }
+        // GPT-4oは最新のGPT-4系なので残す
+      }
+      // GPT-2以下は常に除外（古すぎる）
+      if (name.match(/gpt[- ]?(1|2)$/)) {
+        return true; // 除外
+      }
+    }
+    
+    // Claude系の処理
+    if (name.includes('claude')) {
+      // Claude-4系が存在する場合は、Claude-3以下を除外（Claude-3.5は最新の3系なので残す）
+      const hasClaude4 = Array.from(currentModels.keys()).some(m => 
+        m.toLowerCase().match(/claude[- ]?4/)
+      );
+      if (hasClaude4) {
+        // Claude-4系が存在する場合、Claude-3以下（Claude-3.5以外）を除外
+        if (name.match(/claude[- ]?(1|2|3)$/)) {
+          return true; // 除外
+        }
+        // Claude-3.5は最新の3系なので残す
+      }
+    }
+    
+    return false; // 除外しない
+  };
+
+  // モデル名を追加（1回以上出現したもの、古いモデルは除外）
   for (const [modelName, currentCount] of currentModels.entries()) {
+    // 古いモデルを除外
+    if (excludeOldModels(modelName)) {
+      continue;
+    }
+    
     const previousCount = previousModels.get(modelName) || 0;
     results.push({
       keyword: modelName,
