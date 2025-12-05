@@ -104,6 +104,21 @@ class DBClient {
             return { error };
           }
         },
+        neq: (column: string, value: any) => {
+          try {
+            // neq('id', '') で全削除を実現
+            if (column === 'id' && value === '') {
+              const query = `DELETE FROM ${table}`;
+              this.db.prepare(query).run();
+            } else {
+              const query = `DELETE FROM ${table} WHERE ${column} != ?`;
+              this.db.prepare(query).run(value);
+            }
+            return { error: null };
+          } catch (error) {
+            return { error };
+          }
+        },
       }),
     };
   }
