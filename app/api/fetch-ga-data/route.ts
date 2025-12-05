@@ -123,9 +123,8 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: 'fetch-ga-data completed (placeholder)',
+      message: 'fetch-ga-data completed',
       data: results,
-      note: 'Google Analytics API実装が必要です',
     });
   } catch (error) {
     console.error('Error in fetch-ga-data:', error);

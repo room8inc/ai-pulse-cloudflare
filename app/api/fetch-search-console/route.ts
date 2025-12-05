@@ -125,9 +125,8 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: 'fetch-search-console completed (placeholder)',
+      message: 'fetch-search-console completed',
       data: results,
-      note: 'Google Search Console API実装が必要です',
     });
   } catch (error) {
     console.error('Error in fetch-search-console:', error);
