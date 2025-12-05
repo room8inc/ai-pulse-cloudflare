@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createSupabaseClient } from '@/lib/db';
 
 /**
  * Google Search Consoleから検索クエリデータを取得するAPI
@@ -10,25 +11,67 @@ import { NextRequest, NextResponse } from 'next/server';
  * - インプレッション数
  * - 検索順位
  * - クリック数
+ * 
+ * 注: Google Search Console APIの認証とデータ取得は要実装
  */
 export async function GET(request: NextRequest) {
+  const supabase = createSupabaseClient();
+
   try {
-    // TODO: 実装予定
-    // 1. Google Search Console API認証
-    // 2. 前日の検索クエリデータ取得
+    const siteUrl = process.env.GOOGLE_SEARCH_CONSOLE_SITE_URL;
+    const credentials = process.env.GOOGLE_SEARCH_CONSOLE_CREDENTIALS;
+
+    if (!siteUrl || !credentials) {
+      return NextResponse.json({
+        success: false,
+        error: 'Search Console credentials not configured',
+        message: 'Search Console認証情報が設定されていません',
+      });
+    }
+
+    // TODO: Google Search Console APIを使用してデータ取得
+    // 1. OAuth 2.0認証
+    // 2. 前日の検索クエリデータを取得
     // 3. search_queries テーブルに保存
-    
-    return NextResponse.json({ 
-      success: true, 
-      message: 'fetch-search-console endpoint (to be implemented)',
-      data: [] 
+
+    // 現時点ではプレースホルダー
+    const results = {
+      fetched: 0,
+      saved: 0,
+    };
+
+    // ログを記録
+    supabase.from('logs').insert({
+      level: 'info',
+      endpoint: '/api/fetch-search-console',
+      message: `Fetched Search Console data: ${results.fetched} queries, ${results.saved} saved`,
+      metadata: JSON.stringify(results),
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: 'fetch-search-console completed (placeholder)',
+      data: results,
+      note: 'Google Search Console API実装が必要です',
     });
   } catch (error) {
     console.error('Error in fetch-search-console:', error);
-    return NextResponse.json({ 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Unknown error' 
-    }, { status: 500 });
+
+    // エラーログを記録
+    supabase.from('logs').insert({
+      level: 'error',
+      endpoint: '/api/fetch-search-console',
+      message: error instanceof Error ? error.message : 'Unknown error',
+      metadata: JSON.stringify({ error: String(error) }),
+    });
+
+    return NextResponse.json(
+      {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      },
+      { status: 500 }
+    );
   }
 }
 
