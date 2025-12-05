@@ -35,8 +35,19 @@ export async function GET(request: NextRequest) {
         continue;
       }
 
+      // IDを生成
+      const generateId = () => {
+        const randomBytes = new Uint8Array(16);
+        crypto.getRandomValues(randomBytes);
+        return Array.from(randomBytes)
+          .map(b => b.toString(16).padStart(2, '0'))
+          .join('')
+          .toLowerCase();
+      };
+
       // raw_eventsテーブルに挿入
       const { error: insertError } = supabase.from('raw_events').insert({
+        id: generateId(),
         source: 'arena',
         source_type: 'arena',
         title: `${score.model} - Arena Score`,
