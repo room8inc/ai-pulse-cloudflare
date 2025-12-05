@@ -66,9 +66,9 @@ export async function GET(request: NextRequest) {
         continue;
       }
 
-      // レート制限を考慮（リクエスト間に1秒待機）
+      // レート制限を考慮（リクエスト間に3秒待機 - コスト削減のため）
       if (i > 0) {
-        await delay(1000);
+        await delay(3000); // 3秒待機でレート制限を回避
       }
 
       try {

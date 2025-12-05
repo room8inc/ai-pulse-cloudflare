@@ -10,14 +10,41 @@ export interface TwitterAccount {
   priority: 'high' | 'medium' | 'low';
 }
 
+/**
+ * 監視対象アカウント（コスト最適化版）
+ * 
+ * Twitter APIの価格:
+ * - Basic: $100/月（約15,000円）
+ * - Pro: $5,000/月（約75万円）
+ * 
+ * コストを抑えるため、最重要アカウントのみを監視
+ * その他の情報はRSSフィードやコミュニティから取得
+ */
 export const MONITORED_TWITTER_ACCOUNTS: TwitterAccount[] = [
-  // 公式アカウント（高優先度）
+  // 最重要アカウントのみ（高優先度）
+  // これらのアカウントは公式ブログにない速報情報を提供
   {
     username: 'OpenAI',
     name: 'OpenAI',
     category: 'official',
     priority: 'high',
   },
+  {
+    username: 'anthropicai',
+    name: 'Anthropic',
+    category: 'official',
+    priority: 'high',
+  },
+  {
+    username: 'sama',
+    name: 'Sam Altman',
+    category: 'influencer',
+    priority: 'high',
+  },
+  
+  // 以下はコスト削減のためコメントアウト
+  // 必要に応じて有効化可能
+  /*
   {
     username: 'OpenAIDevs',
     name: 'OpenAI Developers',
@@ -28,12 +55,6 @@ export const MONITORED_TWITTER_ACCOUNTS: TwitterAccount[] = [
     username: 'OpenAINewsroom',
     name: 'OpenAI Newsroom',
     category: 'news',
-    priority: 'high',
-  },
-  {
-    username: 'anthropicai',
-    name: 'Anthropic',
-    category: 'official',
     priority: 'high',
   },
   {
@@ -60,21 +81,11 @@ export const MONITORED_TWITTER_ACCOUNTS: TwitterAccount[] = [
     category: 'official',
     priority: 'high',
   },
-  
-  // ニュース・メディア（中優先度）
   {
     username: 'itmedia_news',
     name: 'ITmedia NEWS',
     category: 'news',
     priority: 'medium',
-  },
-  
-  // インフルエンサー・コミュニティ（中優先度）
-  {
-    username: 'sama',
-    name: 'Sam Altman',
-    category: 'influencer',
-    priority: 'high',
   },
   {
     username: 'elonmusk',
@@ -106,6 +117,7 @@ export const MONITORED_TWITTER_ACCOUNTS: TwitterAccount[] = [
     category: 'community',
     priority: 'low',
   },
+  */
 ];
 
 /**
