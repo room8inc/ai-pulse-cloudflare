@@ -49,31 +49,25 @@ export function detectRisingKeywords(
   minGrowthRate: number = 50
 ): Array<{ keyword: string; growthRate: number; currentCount: number }> {
   // 主要なAI関連キーワード（固定リスト）
+  // 注意: 具体的なモデル名（GPT-4、Claude-3など）は含めない
+  // モデル名は進化するため、動的抽出で検出する
   const fixedKeywords = [
-    'GPT-4',
-    'GPT-4o',
-    'GPT-3.5',
-    'Claude',
-    'Claude-3',
-    'Claude-3.5',
-    'Anthropic',
+    // 会社名・組織名
     'OpenAI',
-    'LLM',
-    'Gemini',
-    'Gemini Pro',
-    'xAI',
-    'Grok',
-    'Mistral',
-    'Llama',
-    'Llama 2',
-    'Llama 3',
-    'Meta',
-    'Google DeepMind',
+    'Anthropic',
+    'Google',
     'DeepMind',
+    'xAI',
+    'Meta',
+    'Microsoft',
+    // 技術カテゴリ
+    'LLM',
     'Agent',
     'RAG',
     'Fine-tuning',
     'Prompt Engineering',
+    'Multimodal',
+    'API',
   ];
 
   const results: Array<{
@@ -111,11 +105,55 @@ export function detectRisingKeywords(
 
 /**
  * タイトルから動的にキーワードを抽出
+ * モデル名（GPT-X、Claude-Xなど）も自動検出
  */
 function extractDynamicKeywords(
   currentEvents: any[],
   previousEvents: any[]
 ): Array<{ keyword: string; currentCount: number; previousCount: number }> {
+  // モデル名パターンを検出（GPT-4、Claude-3.5、Gemini Proなど）
+  const extractModelNames = (events: any[]): Map<string, number> => {
+    const modelCount = new Map<string, number>();
+    
+    // モデル名のパターン（正規表現）
+    const modelPatterns = [
+      /GPT[- ]?(\d+(?:\.\d+)?(?:o|turbo|mini)?)/gi,  // GPT-4, GPT-4o, GPT-3.5, GPT-5.1
+      /Claude[- ]?(\d+(?:\.\d+)?(?:sonnet|opus|haiku)?)/gi,  // Claude-3, Claude-3.5, Claude-3.5-sonnet
+      /Gemini[- ]?(Pro|Ultra|Flash|(\d+(?:\.\d+)?)?)/gi,  // Gemini Pro, Gemini Ultra, Gemini 2.0
+      /Llama[- ]?(\d+(?:\.\d+)?)/gi,  // Llama-2, Llama-3, Llama-3.1
+      /Mistral[- ]?(\d+(?:\.\d+)?(?:B|Large)?)/gi,  // Mistral-7B, Mistral-Large
+      /Grok[- ]?(\d+(?:\.\d+)?)?/gi,  // Grok, Grok-2
+    ];
+
+    for (const event of events) {
+      const text = ((event.title || '') + ' ' + (event.content || '')).toLowerCase();
+      
+      for (const pattern of modelPatterns) {
+        const matches = text.matchAll(pattern);
+        for (const match of matches) {
+          if (match[0]) {
+            const modelName = match[0].trim();
+            // 正規化（GPT-4o → GPT-4o、gpt-4 → GPT-4）
+            const normalized = modelName
+              .split(/[- ]/)
+              .map((part, i) => {
+                if (i === 0) {
+                  // 最初の部分は大文字に
+                  return part.charAt(0).toUpperCase() + part.slice(1);
+                }
+                return part;
+              })
+              .join('-');
+            
+            modelCount.set(normalized, (modelCount.get(normalized) || 0) + 1);
+          }
+        }
+      }
+    }
+
+    return modelCount;
+  };
+
   // タイトルから単語を抽出（2-3語のフレーズ）
   const extractPhrases = (events: any[]): Map<string, number> => {
     const phraseCount = new Map<string, number>();
@@ -176,10 +214,24 @@ function extractDynamicKeywords(
     return phraseCount;
   };
 
+  // モデル名を抽出
+  const currentModels = extractModelNames(currentEvents);
+  const previousModels = extractModelNames(previousEvents);
+
   const currentPhrases = extractPhrases(currentEvents);
   const previousPhrases = extractPhrases(previousEvents);
 
   const results: Array<{ keyword: string; currentCount: number; previousCount: number }> = [];
+
+  // モデル名を追加（1回以上出現したもの）
+  for (const [modelName, currentCount] of currentModels.entries()) {
+    const previousCount = previousModels.get(modelName) || 0;
+    results.push({
+      keyword: modelName,
+      currentCount,
+      previousCount,
+    });
+  }
 
   // 現在の期間で3回以上出現したフレーズを抽出
   for (const [phrase, currentCount] of currentPhrases.entries()) {
