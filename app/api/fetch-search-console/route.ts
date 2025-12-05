@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseClient } from '@/lib/db';
+import { fetchSearchConsoleData } from '@/utils/google-search-console';
 
 /**
  * Google Search Consoleから検索クエリデータを取得するAPI
@@ -43,15 +44,75 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // TODO: Google Search Console APIを使用してデータ取得
-    // 1. OAuth 2.0認証
-    // 2. 前日の検索クエリデータを取得
-    // 3. search_queries テーブルに保存
+    // 前日の日付を計算
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const startDate = yesterday.toISOString().split('T')[0];
+    const endDate = startDate;
 
-    // 現時点ではプレースホルダー
+    // Google Search Consoleからデータを取得
+    const queries = await fetchSearchConsoleData(siteUrl, credentials, startDate, endDate);
+
+    let fetched = 0;
+    let saved = 0;
+
+    // search_queriesテーブルに保存
+    for (const query of queries) {
+      // IDを生成
+      const generateId = () => {
+        const randomBytes = new Uint8Array(16);
+        crypto.getRandomValues(randomBytes);
+        return Array.from(randomBytes)
+          .map(b => b.toString(16).padStart(2, '0'))
+          .join('')
+          .toLowerCase();
+      };
+
+      // 重複チェック（同じクエリと日付の組み合わせ）
+      const { data: existing } = supabase
+        .from('search_queries')
+        .select('id')
+        .eq('query', query.query)
+        .eq('date', query.date)
+        .single();
+
+      if (existing) {
+        // 既存の場合は更新
+        const { error } = supabase
+          .from('search_queries')
+          .update({
+            impressions: query.impressions,
+            clicks: query.clicks,
+            ctr: query.ctr,
+            avg_position: query.avgPosition,
+          })
+          .eq('id', existing.id);
+
+        if (!error) {
+          saved++;
+        }
+      } else {
+        // 新規の場合は挿入
+        const { error } = supabase.from('search_queries').insert({
+          id: generateId(),
+          query: query.query,
+          impressions: query.impressions,
+          clicks: query.clicks,
+          ctr: query.ctr,
+          avg_position: query.avgPosition,
+          date: query.date,
+        });
+
+        if (!error) {
+          fetched++;
+          saved++;
+        }
+      }
+    }
+
     const results = {
-      fetched: 0,
-      saved: 0,
+      fetched,
+      saved,
     };
 
     // ログを記録

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseClient } from '@/lib/db';
+import { fetchGAPostData } from '@/utils/google-analytics';
 
 /**
  * Google Analyticsから過去のブログ記事のパフォーマンスデータを取得するAPI
@@ -43,15 +44,73 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // TODO: Google Analytics Data APIを使用してデータ取得
-    // 1. OAuth 2.0認証
-    // 2. 前日のページビューデータを取得
-    // 3. blog_posts テーブルに保存または更新
+    // 前日の日付を計算
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const startDate = yesterday.toISOString().split('T')[0];
+    const endDate = startDate;
 
-    // 現時点ではプレースホルダー
+    // Google Analyticsからデータを取得
+    const posts = await fetchGAPostData(propertyId, credentials, startDate, endDate);
+
+    let fetched = 0;
+    let updated = 0;
+
+    // blog_postsテーブルに保存または更新
+    for (const post of posts) {
+      // IDを生成
+      const generateId = () => {
+        const randomBytes = new Uint8Array(16);
+        crypto.getRandomValues(randomBytes);
+        return Array.from(randomBytes)
+          .map(b => b.toString(16).padStart(2, '0'))
+          .join('')
+          .toLowerCase();
+      };
+
+      // 既存の記事を検索（URLで）
+      const { data: existing } = supabase
+        .from('blog_posts')
+        .select('id')
+        .eq('url', post.url)
+        .single();
+
+      if (existing) {
+        // 既存の場合は更新
+        const { error } = supabase
+          .from('blog_posts')
+          .update({
+            page_views: post.pageViews,
+            avg_time_on_page: post.avgTimeOnPage,
+            bounce_rate: post.bounceRate,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', existing.id);
+
+        if (!error) {
+          updated++;
+        }
+      } else {
+        // 新規の場合は挿入
+        const { error } = supabase.from('blog_posts').insert({
+          id: generateId(),
+          title: post.title,
+          url: post.url,
+          published_at: post.publishedAt,
+          page_views: post.pageViews,
+          avg_time_on_page: post.avgTimeOnPage,
+          bounce_rate: post.bounceRate,
+        });
+
+        if (!error) {
+          fetched++;
+        }
+      }
+    }
+
     const results = {
-      fetched: 0,
-      updated: 0,
+      fetched,
+      updated,
     };
 
     // ログを記録
