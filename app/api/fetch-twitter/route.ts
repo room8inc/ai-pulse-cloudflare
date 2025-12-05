@@ -120,7 +120,11 @@ export async function GET(request: NextRequest) {
             continue;
           }
 
+          // user_voices用のIDを生成
+          const userVoiceId = generateId();
+
           const { error: userVoiceError } = supabase.from('user_voices').insert({
+            id: userVoiceId,
             source: 'twitter',
             platform: 'twitter',
             title: tweet.text?.substring(0, 200) || '',
@@ -128,6 +132,7 @@ export async function GET(request: NextRequest) {
             url: tweetUrl,
             author: `user_${tweet.author_id}`,
             score: tweet.public_metrics?.like_count || 0,
+            raw_event_id: rawEventId,
             published_at: new Date(tweet.created_at).toISOString(),
             metadata: JSON.stringify({
               tweet_id: tweet.id,
