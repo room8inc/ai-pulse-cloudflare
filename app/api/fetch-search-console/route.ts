@@ -22,10 +22,24 @@ export async function GET(request: NextRequest) {
     const credentials = process.env.GOOGLE_SEARCH_CONSOLE_CREDENTIALS;
 
     if (!siteUrl || !credentials) {
+      // 認証情報が未設定の場合は、フォールバック動作として空の結果を返す
+      supabase.from('logs').insert({
+        level: 'warning',
+        endpoint: '/api/fetch-search-console',
+        message: 'Search Console credentials not configured. Search Console data fetching skipped.',
+        metadata: JSON.stringify({
+          note: 'Search Console認証情報を設定すると、検索クエリデータを取得できます',
+        }),
+      });
+
       return NextResponse.json({
-        success: false,
-        error: 'Search Console credentials not configured',
-        message: 'Search Console認証情報が設定されていません',
+        success: true,
+        message: 'fetch-search-console skipped (no authentication)',
+        data: {
+          fetched: 0,
+          saved: 0,
+        },
+        note: 'Search Console認証情報が設定されていません。設定方法については後述の指示を参照してください。',
       });
     }
 
