@@ -168,6 +168,40 @@ SQLite (ローカルデータベース)
 
 ---
 
+## ■ クイックスタート
+
+### 1. システムを起動する
+
+```bash
+npm install
+npm run dev
+```
+
+ブラウザで `http://localhost:3000/dashboard` にアクセスすると、ダッシュボードが表示されます。
+
+### 2. データを取得する
+
+以下のAPIを実行すると、データが取得されます：
+
+```bash
+# 公式情報を取得
+curl http://localhost:3000/api/fetch-official
+
+# トレンド分析を実行
+curl http://localhost:3000/api/analyze-trends
+
+# ブログ候補を生成
+curl http://localhost:3000/api/summarize-today
+```
+
+### 3. ダッシュボードで確認
+
+`http://localhost:3000/dashboard` で生成されたブログ候補を確認し、「採用」「ボツ」を選択できます。
+
+**詳細な使い方は [USAGE.md](./USAGE.md) を参照してください。**
+
+---
+
 ## ■ セットアップ
 
 ### 1. 環境変数
