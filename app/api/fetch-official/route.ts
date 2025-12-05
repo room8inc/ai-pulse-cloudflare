@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createSupabaseClient } from '@/lib/supabase';
+import { createSupabaseClient } from '@/lib/db';
 import { OFFICIAL_RSS_FEEDS } from '@/lib/rss-feeds';
 import { fetchRSSFeed } from '@/utils/rss-parser';
 
@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
         for (const item of items) {
           // 重複チェック（URLが既に存在するか）
           if (item.link) {
-            const { data: existing } = await supabase
+            const { data: existing } = supabase
               .from('raw_events')
               .select('id')
               .eq('url', item.link)
@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
           }
 
           // raw_eventsテーブルに挿入
-          const { error: insertError } = await supabase
+          const { error: insertError } = supabase
             .from('raw_events')
             .insert({
               source: feed.source,
@@ -68,10 +68,10 @@ export async function GET(request: NextRequest) {
               url: item.link || null,
               author: item.author || null,
               published_at: publishedAt?.toISOString() || null,
-              metadata: {
+              metadata: JSON.stringify({
                 categories: item.categories || [],
                 feed_name: feed.name,
-              },
+              }),
             });
 
           if (insertError) {
@@ -92,16 +92,16 @@ export async function GET(request: NextRequest) {
     }
 
     // ログを記録
-    await supabase.from('logs').insert({
+    supabase.from('logs').insert({
       level: results.failed > 0 ? 'warning' : 'info',
       endpoint: '/api/fetch-official',
       message: `Fetched ${results.success} items, ${results.failed} failed`,
-      metadata: {
+      metadata: JSON.stringify({
         total: results.total,
         success: results.success,
         failed: results.failed,
         errors: results.errors,
-      },
+      }),
     });
 
     return NextResponse.json({
@@ -118,11 +118,11 @@ export async function GET(request: NextRequest) {
     console.error('Error in fetch-official:', error);
 
     // エラーログを記録
-    await supabase.from('logs').insert({
+    supabase.from('logs').insert({
       level: 'error',
       endpoint: '/api/fetch-official',
       message: error instanceof Error ? error.message : 'Unknown error',
-      metadata: { error: String(error) },
+      metadata: JSON.stringify({ error: String(error) }),
     });
 
     return NextResponse.json(
