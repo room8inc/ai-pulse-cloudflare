@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseClient } from '@/lib/db';
+import { MONITORED_TWITTER_ACCOUNTS, getUserIds } from '@/lib/twitter-accounts';
 
 /**
  * Twitter/X投稿を取得するAPI
@@ -44,23 +45,36 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // AI関連の検索クエリ（より具体的で、スパムを除外）
-    const queries = [
-      // 最新モデルに関する具体的な検索
-      '(GPT-5 OR GPT-5.1 OR "GPT 5") -spam -promo -giveaway -free lang:en',
-      '(Claude-4 OR Claude-4.5 OR "Claude 4") -spam -promo -giveaway -free lang:en',
-      '(Anthropic OR OpenAI OR "Google DeepMind") (announcement OR release OR update) -spam lang:en',
-      // 技術的な議論
-      '(LLM OR "large language model") (benchmark OR performance OR evaluation) -spam lang:en',
-      // 新機能・アップデート
-      '(AI OR "artificial intelligence") (new feature OR update OR release) -spam -promo lang:en',
-    ];
+    // 監視対象アカウントのユーザーIDを取得（バッチで取得）
+    const usernames = MONITORED_TWITTER_ACCOUNTS.map(acc => acc.username);
+    const userIdMap = await getUserIds(usernames, bearerToken);
 
-    for (const query of queries) {
+    // 各アカウントの投稿を取得（優先度順、レート制限を考慮）
+    const accountsByPriority = MONITORED_TWITTER_ACCOUNTS.sort((a, b) => {
+      const priorityOrder = { high: 3, medium: 2, low: 1 };
+      return priorityOrder[b.priority] - priorityOrder[a.priority];
+    });
+
+    // レート制限を考慮して、リクエスト間に待機時間を設ける
+    const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+    for (let i = 0; i < accountsByPriority.length; i++) {
+      const account = accountsByPriority[i];
+      const userId = userIdMap.get(account.username.toLowerCase());
+      if (!userId) {
+        console.warn(`User ID not found for @${account.username}`);
+        continue;
+      }
+
+      // レート制限を考慮（リクエスト間に1秒待機）
+      if (i > 0) {
+        await delay(1000);
+      }
+
       try {
-        // Twitter API v2で検索
+        // 特定ユーザーの投稿を取得（最新10件）
         const response = await fetch(
-          `https://api.twitter.com/2/tweets/search/recent?query=${encodeURIComponent(query)}&max_results=10&tweet.fields=created_at,author_id,public_metrics`,
+          `https://api.twitter.com/2/users/${userId}/tweets?max_results=10&tweet.fields=created_at,author_id,public_metrics,text&exclude=retweets,replies`,
           {
             headers: {
               Authorization: `Bearer ${bearerToken}`,
@@ -70,25 +84,40 @@ export async function GET(request: NextRequest) {
         );
 
         if (!response.ok) {
-          throw new Error(`Twitter API Error: ${response.status}`);
+          const errorData = await response.json().catch(() => ({}));
+          
+          // レート制限エラー（429）の場合はスキップして続行
+          if (response.status === 429) {
+            console.warn(`Rate limit reached for @${account.username}, skipping...`);
+            results.errors.push(`@${account.username}: Rate limit exceeded`);
+            continue;
+          }
+          
+          throw new Error(`Twitter API Error: ${response.status} - ${JSON.stringify(errorData)}`);
         }
 
         const data = await response.json();
         const tweets = data.data || [];
 
         results.total += tweets.length;
+        
+        // アカウント情報を追加
+        const accountInfo = account;
 
         for (const tweet of tweets) {
-          // 品質フィルタリング
+          // 品質フィルタリング（エンゲージメントで判定）
           const metrics = tweet.public_metrics || {};
           const likeCount = metrics.like_count || 0;
           const retweetCount = metrics.retweet_count || 0;
           const replyCount = metrics.reply_count || 0;
           
-          // エンゲージメントが低すぎる投稿を除外（スパムの可能性）
+          // エンゲージメントの閾値（アカウントの優先度に応じて調整）
+          const engagementThreshold = accountInfo.priority === 'high' ? 10 : 5;
           const totalEngagement = likeCount + retweetCount + replyCount;
-          if (totalEngagement < 3) {
-            continue; // エンゲージメントが3未満の投稿はスキップ
+          
+          // エンゲージメントが低すぎる投稿を除外
+          if (totalEngagement < engagementThreshold) {
+            continue;
           }
           
           // スパムキーワードをチェック
@@ -140,6 +169,9 @@ export async function GET(request: NextRequest) {
             metadata: JSON.stringify({
               tweet_id: tweet.id,
               metrics: tweet.public_metrics,
+              account: accountInfo.username,
+              account_category: accountInfo.category,
+              account_priority: accountInfo.priority,
             }),
           });
 
@@ -165,6 +197,9 @@ export async function GET(request: NextRequest) {
             metadata: JSON.stringify({
               tweet_id: tweet.id,
               retweet_count: tweet.public_metrics?.retweet_count || 0,
+              account: accountInfo.username,
+              account_category: accountInfo.category,
+              account_priority: accountInfo.priority,
             }),
           });
 
@@ -173,10 +208,10 @@ export async function GET(request: NextRequest) {
           }
         }
       } catch (error) {
-        console.error(`Error fetching Twitter query "${query}":`, error);
+        console.error(`Error fetching tweets from @${account.username}:`, error);
         results.failed++;
         results.errors.push(
-          `Query "${query}": ${error instanceof Error ? error.message : 'Unknown error'}`
+          `@${account.username}: ${error instanceof Error ? error.message : 'Unknown error'}`
         );
       }
     }
