@@ -11,6 +11,8 @@ interface Stats {
     pending: number;
     approved: number;
   };
+  topTrends?: any[];
+  topPosts?: any[];
 }
 
 interface BlogIdea {
@@ -140,6 +142,62 @@ export default function DashboardPage() {
           )}
         </div>
       </div>
+
+      {/* 急上昇トレンド */}
+      {stats?.topTrends && stats.topTrends.length > 0 && (
+        <div className="mb-8">
+          <h2 className="text-2xl font-semibold mb-4">急上昇トレンド</h2>
+          <div className="border rounded-lg overflow-hidden">
+            <ul className="divide-y">
+              {stats.topTrends.map((trend: any, index: number) => (
+                <li key={trend.id || index} className="p-4 hover:bg-gray-50">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <h3 className="font-semibold">{trend.keyword}</h3>
+                      <p className="text-sm text-gray-500 mt-1">
+                        成長率: {trend.growth_rate?.toFixed(1) || 0}% • 
+                        言及数: {trend.value || 0}件
+                      </p>
+                    </div>
+                    <span className="px-3 py-1 rounded-full text-sm bg-red-100 text-red-800">
+                      {trend.growth_rate > 100 ? '🔥 急上昇' : '📈 上昇'}
+                    </span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      )}
+
+      {/* 人気記事 */}
+      {stats?.topPosts && stats.topPosts.length > 0 && (
+        <div className="mb-8">
+          <h2 className="text-2xl font-semibold mb-4">人気記事（過去パフォーマンス）</h2>
+          <div className="border rounded-lg overflow-hidden">
+            <ul className="divide-y">
+              {stats.topPosts.map((post: any, index: number) => (
+                <li key={post.id || index} className="p-4 hover:bg-gray-50">
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <h3 className="font-semibold">{post.title}</h3>
+                      <div className="flex gap-4 mt-2 text-sm text-gray-600">
+                        <span>PV: {post.page_views || 0}</span>
+                        {post.avg_time_on_page && (
+                          <span>滞在時間: {Math.round(post.avg_time_on_page)}秒</span>
+                        )}
+                        {post.bounce_rate && (
+                          <span>直帰率: {(post.bounce_rate * 100).toFixed(1)}%</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      )}
 
       {/* ブログ候補 */}
       <div>

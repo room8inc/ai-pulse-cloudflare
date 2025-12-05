@@ -45,6 +45,29 @@ export async function GET(request: NextRequest) {
     const pendingIdeas = blogIdeas?.filter((idea: any) => idea.status === 'pending') || [];
     const approvedIdeas = blogIdeas?.filter((idea: any) => idea.status === 'approved') || [];
 
+    // 最新のトレンド（過去7日間、成長率が高い順）
+    const { data: recentTrends } = db
+      .from('trends')
+      .select('*')
+      .gte('created_at', sevenDaysAgo.toISOString())
+      .all();
+
+    const topTrends = (recentTrends || [])
+      .filter((t: any) => t.trend_type === 'keyword' && t.growth_rate > 50)
+      .sort((a: any, b: any) => (b.growth_rate || 0) - (a.growth_rate || 0))
+      .slice(0, 5);
+
+    // 過去記事のパフォーマンス（人気記事トップ5）
+    const { data: popularPosts } = db
+      .from('blog_posts')
+      .select('*')
+      .all();
+
+    const topPosts = (popularPosts || [])
+      .filter((p: any) => p.page_views > 0)
+      .sort((a: any, b: any) => (b.page_views || 0) - (a.page_views || 0))
+      .slice(0, 5);
+
     return NextResponse.json({
       success: true,
       data: {
@@ -56,6 +79,8 @@ export async function GET(request: NextRequest) {
           pending: pendingIdeas.length,
           approved: approvedIdeas.length,
         },
+        topTrends: topTrends,
+        topPosts: topPosts,
       },
     });
   } catch (error) {
