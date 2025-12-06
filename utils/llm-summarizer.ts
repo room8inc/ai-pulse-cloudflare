@@ -269,15 +269,26 @@ async function generateWithAnthropic(input: SummaryInput): Promise<{
   const { Anthropic } = await import('@anthropic-ai/sdk');
   const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
+  // 公式情報を要約（より詳細な情報を含める）
   const officialText = input.official
-    .slice(0, 10)
-    .map((item: any) => `- ${item.title}: ${item.content?.substring(0, 200)}`)
-    .join('\n');
+    .slice(0, 15)
+    .map((item: any) => {
+      const content = item.content?.substring(0, 500) || item.title || '';
+      const url = item.url || '';
+      return `- 【${item.title}】\n  URL: ${url}\n  内容: ${content}`;
+    })
+    .join('\n\n');
 
+  // コミュニティの声を要約（より詳細な情報を含める）
   const communityText = input.community
-    .slice(0, 10)
-    .map((item: any) => `- ${item.title}: ${item.content?.substring(0, 200)}`)
-    .join('\n');
+    .slice(0, 15)
+    .map((item: any) => {
+      const content = item.content?.substring(0, 500) || item.title || '';
+      const url = item.url || '';
+      const sentiment = item.sentiment || '';
+      return `- 【${item.title}】\n  URL: ${url}\n  感情: ${sentiment}\n  内容: ${content}`;
+    })
+    .join('\n\n');
 
   const trendsText = input.trends
     .slice(0, 5)
@@ -465,15 +476,26 @@ async function generateWithGemini(input: SummaryInput): Promise<{
     },
   });
 
+  // 公式情報を要約（より詳細な情報を含める）
   const officialText = input.official
-    .slice(0, 10)
-    .map((item: any) => `- ${item.title}: ${item.content?.substring(0, 200)}`)
-    .join('\n');
+    .slice(0, 15)
+    .map((item: any) => {
+      const content = item.content?.substring(0, 500) || item.title || '';
+      const url = item.url || '';
+      return `- 【${item.title}】\n  URL: ${url}\n  内容: ${content}`;
+    })
+    .join('\n\n');
 
+  // コミュニティの声を要約（より詳細な情報を含める）
   const communityText = input.community
-    .slice(0, 10)
-    .map((item: any) => `- ${item.title}: ${item.content?.substring(0, 200)}`)
-    .join('\n');
+    .slice(0, 15)
+    .map((item: any) => {
+      const content = item.content?.substring(0, 500) || item.title || '';
+      const url = item.url || '';
+      const sentiment = item.sentiment || '';
+      return `- 【${item.title}】\n  URL: ${url}\n  感情: ${sentiment}\n  内容: ${content}`;
+    })
+    .join('\n\n');
 
   const trendsText = input.trends
     .slice(0, 5)
