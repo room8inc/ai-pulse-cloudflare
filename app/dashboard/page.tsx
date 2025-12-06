@@ -356,7 +356,10 @@ export default function DashboardPage() {
                     <div className="flex-1">
                       <h3 className="font-semibold text-lg">{idea.title}</h3>
                       {idea.summary && (
-                        <p className="text-gray-600 mt-2">{idea.summary}</p>
+                        <div className="mt-3 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                          <p className="text-sm font-semibold text-yellow-900 mb-1">📝 記事作成アドバイス</p>
+                          <p className="text-sm text-gray-700 leading-relaxed">{idea.summary}</p>
+                        </div>
                       )}
                       {/* 元ネタのURL */}
                       {idea.sourceUrls && idea.sourceUrls.length > 0 && (
