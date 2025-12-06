@@ -63,9 +63,25 @@ export async function GET(request: NextRequest) {
         console.error('Error parsing sources:', error);
       }
       
+      // metadataからSEO情報を取得
+      let recommendedKeywords: string[] = [];
+      let seoRecommendations = '';
+      
+      try {
+        if (idea.metadata) {
+          const metadata = JSON.parse(idea.metadata);
+          recommendedKeywords = metadata.recommended_keywords || [];
+          seoRecommendations = metadata.seo_recommendations || '';
+        }
+      } catch (error) {
+        console.error('Error parsing metadata:', error);
+      }
+      
       return {
         ...idea,
         sourceUrls, // 元ネタのURLリストを追加
+        recommended_keywords: recommendedKeywords,
+        seo_recommendations: seoRecommendations,
       };
     });
 

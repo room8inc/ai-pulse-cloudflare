@@ -55,11 +55,49 @@ export async function GET(request: NextRequest) {
       .gte('created_at', sevenDaysAgoStart)
       .all();
 
+    // Search Consoleの検索クエリ（過去30日間、人気順）
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const { data: searchQueries } = supabase
+      .from('search_queries')
+      .select('*')
+      .gte('date', thirtyDaysAgo.toISOString().split('T')[0])
+      .all();
+    
+    // 検索クエリを集計（クリック数が多い順）
+    const queryMap = new Map<string, { query: string; clicks: number; impressions: number; ctr: number }>();
+    (searchQueries || []).forEach((q: any) => {
+      const key = q.query.toLowerCase();
+      if (!queryMap.has(key)) {
+        queryMap.set(key, { query: q.query, clicks: 0, impressions: 0, ctr: 0 });
+      }
+      const existing = queryMap.get(key)!;
+      existing.clicks += q.clicks || 0;
+      existing.impressions += q.impressions || 0;
+    });
+    const topQueries = Array.from(queryMap.values())
+      .map(q => ({ ...q, ctr: q.impressions > 0 ? (q.clicks / q.impressions) * 100 : 0 }))
+      .sort((a, b) => b.clicks - a.clicks)
+      .slice(0, 20);
+
+    // 人気記事（過去のパフォーマンス）
+    const { data: popularPosts } = supabase
+      .from('blog_posts')
+      .select('*')
+      .all();
+    
+    const topPosts = (popularPosts || [])
+      .filter((p: any) => p.page_views > 100)
+      .sort((a: any, b: any) => (b.page_views || 0) - (a.page_views || 0))
+      .slice(0, 10);
+
     // LLMでサマリーを生成
     const { summary, blogIdeas } = await generateSummary({
       official: official || [],
       community: community || [],
       trends: trends || [],
+      searchQueries: topQueries,
+      popularPosts: topPosts,
     });
 
     // ブログ候補をDBに登録

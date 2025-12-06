@@ -24,6 +24,8 @@ interface BlogIdea {
   recommendation_score?: number;
   created_at: string;
   sourceUrls?: Array<{ title: string; url: string; source: string }>;
+  recommended_keywords?: string[];
+  seo_recommendations?: string;
 }
 
 interface FetchStatus {
