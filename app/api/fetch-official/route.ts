@@ -27,8 +27,14 @@ export async function GET(request: NextRequest) {
     // 最新7日間のみ取得（古い情報を除外）
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-    // 各RSSフィードを取得（公式 + メディア）
-    for (const feed of ALL_RSS_FEEDS) {
+    // 各RSSフィードを取得（メディアを優先、公式は補完的に）
+    // 優先度順にソート（high → medium → low）
+    const sortedFeeds = [...ALL_RSS_FEEDS].sort((a, b) => {
+      const priorityOrder = { high: 3, medium: 2, low: 1 };
+      return priorityOrder[b.priority] - priorityOrder[a.priority];
+    });
+    
+    for (const feed of sortedFeeds) {
       try {
         const items = await fetchRSSFeed(feed.url);
         results.total += items.length;
