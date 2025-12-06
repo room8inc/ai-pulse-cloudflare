@@ -40,6 +40,16 @@ class DBClient {
             values.push(value);
             return queryBuilder;
           },
+          in: (column: string, valueList: any[]) => {
+            if (valueList.length === 0) {
+              conditions.push('1 = 0'); // 空のリストの場合は常にfalse
+              return queryBuilder;
+            }
+            const placeholders = valueList.map(() => '?').join(', ');
+            conditions.push(`${column} IN (${placeholders})`);
+            values.push(...valueList);
+            return queryBuilder;
+          },
           gte: (column: string, value: any) => {
             conditions.push(`${column} >= ?`);
             values.push(value);
