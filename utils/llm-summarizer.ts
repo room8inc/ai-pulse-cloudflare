@@ -56,23 +56,26 @@ async function generateWithOpenAI(input: SummaryInput): Promise<{
   const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
   // 公式情報を要約（より詳細な情報を含める）
+  // 公式情報を要約（より詳細な情報を含める、IDも含める）
   const officialText = input.official
     .slice(0, 15)
     .map((item: any) => {
       const content = item.content?.substring(0, 500) || item.title || '';
       const url = item.url || '';
-      return `- 【${item.title}】\n  URL: ${url}\n  内容: ${content}`;
+      const id = item.id || '';
+      return `- 【ID: ${id}】${item.title}\n  URL: ${url}\n  内容: ${content}`;
     })
     .join('\n\n');
 
-  // コミュニティの声を要約（より詳細な情報を含める）
+  // コミュニティの声を要約（より詳細な情報を含める、IDも含める）
   const communityText = input.community
     .slice(0, 15)
     .map((item: any) => {
       const content = item.content?.substring(0, 500) || item.title || '';
       const url = item.url || '';
       const sentiment = item.sentiment || '';
-      return `- 【${item.title}】\n  URL: ${url}\n  感情: ${sentiment}\n  内容: ${content}`;
+      const id = item.id || '';
+      return `- 【ID: ${id}】${item.title}\n  URL: ${url}\n  感情: ${sentiment}\n  内容: ${content}`;
     })
     .join('\n\n');
 
@@ -275,23 +278,26 @@ async function generateWithAnthropic(input: SummaryInput): Promise<{
   const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
   // 公式情報を要約（より詳細な情報を含める）
+  // 公式情報を要約（より詳細な情報を含める、IDも含める）
   const officialText = input.official
     .slice(0, 15)
     .map((item: any) => {
       const content = item.content?.substring(0, 500) || item.title || '';
       const url = item.url || '';
-      return `- 【${item.title}】\n  URL: ${url}\n  内容: ${content}`;
+      const id = item.id || '';
+      return `- 【ID: ${id}】${item.title}\n  URL: ${url}\n  内容: ${content}`;
     })
     .join('\n\n');
 
-  // コミュニティの声を要約（より詳細な情報を含める）
+  // コミュニティの声を要約（より詳細な情報を含める、IDも含める）
   const communityText = input.community
     .slice(0, 15)
     .map((item: any) => {
       const content = item.content?.substring(0, 500) || item.title || '';
       const url = item.url || '';
       const sentiment = item.sentiment || '';
-      return `- 【${item.title}】\n  URL: ${url}\n  感情: ${sentiment}\n  内容: ${content}`;
+      const id = item.id || '';
+      return `- 【ID: ${id}】${item.title}\n  URL: ${url}\n  感情: ${sentiment}\n  内容: ${content}`;
     })
     .join('\n\n');
 
@@ -487,23 +493,26 @@ async function generateWithGemini(input: SummaryInput): Promise<{
   });
 
   // 公式情報を要約（より詳細な情報を含める）
+  // 公式情報を要約（より詳細な情報を含める、IDも含める）
   const officialText = input.official
     .slice(0, 15)
     .map((item: any) => {
       const content = item.content?.substring(0, 500) || item.title || '';
       const url = item.url || '';
-      return `- 【${item.title}】\n  URL: ${url}\n  内容: ${content}`;
+      const id = item.id || '';
+      return `- 【ID: ${id}】${item.title}\n  URL: ${url}\n  内容: ${content}`;
     })
     .join('\n\n');
 
-  // コミュニティの声を要約（より詳細な情報を含める）
+  // コミュニティの声を要約（より詳細な情報を含める、IDも含める）
   const communityText = input.community
     .slice(0, 15)
     .map((item: any) => {
       const content = item.content?.substring(0, 500) || item.title || '';
       const url = item.url || '';
       const sentiment = item.sentiment || '';
-      return `- 【${item.title}】\n  URL: ${url}\n  感情: ${sentiment}\n  内容: ${content}`;
+      const id = item.id || '';
+      return `- 【ID: ${id}】${item.title}\n  URL: ${url}\n  感情: ${sentiment}\n  内容: ${content}`;
     })
     .join('\n\n');
 
