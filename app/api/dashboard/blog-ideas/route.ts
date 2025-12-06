@@ -19,8 +19,58 @@ export async function GET(request: NextRequest) {
 
     const { data: ideas } = query.all();
 
+    // 各ブログ候補の元ネタ（URL）を取得
+    const ideasWithSources = (ideas || []).map((idea: any) => {
+      let sourceUrls: Array<{ title: string; url: string; source: string }> = [];
+      
+      try {
+        const sourceIds = idea.sources ? JSON.parse(idea.sources) : [];
+        
+        // raw_eventsからURLを取得
+        for (const sourceId of sourceIds) {
+          const { data: rawEvent } = db
+            .from('raw_events')
+            .select('title, url, source')
+            .eq('id', sourceId)
+            .single();
+          
+          if (rawEvent && rawEvent.url) {
+            sourceUrls.push({
+              title: rawEvent.title || '元ネタ',
+              url: rawEvent.url,
+              source: rawEvent.source || 'unknown',
+            });
+          }
+          
+          // user_voicesからも取得（raw_eventsにない場合）
+          if (!rawEvent) {
+            const { data: userVoice } = db
+              .from('user_voices')
+              .select('title, url, source')
+              .eq('id', sourceId)
+              .single();
+            
+            if (userVoice && userVoice.url) {
+              sourceUrls.push({
+                title: userVoice.title || '元ネタ',
+                url: userVoice.url,
+                source: userVoice.source || 'unknown',
+              });
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error parsing sources:', error);
+      }
+      
+      return {
+        ...idea,
+        sourceUrls, // 元ネタのURLリストを追加
+      };
+    });
+
     // 優先度と推奨度でソート
-    const sortedIdeas = (ideas || []).sort((a: any, b: any) => {
+    const sortedIdeas = ideasWithSources.sort((a: any, b: any) => {
       // 優先度: high > medium > low
       const priorityOrder: { [key: string]: number } = { high: 3, medium: 2, low: 1 };
       const priorityDiff = (priorityOrder[b.priority] || 0) - (priorityOrder[a.priority] || 0);

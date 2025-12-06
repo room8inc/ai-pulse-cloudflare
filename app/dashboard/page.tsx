@@ -23,6 +23,7 @@ interface BlogIdea {
   status: string;
   recommendation_score?: number;
   created_at: string;
+  sourceUrls?: Array<{ title: string; url: string; source: string }>;
 }
 
 interface FetchStatus {
@@ -354,6 +355,27 @@ export default function DashboardPage() {
                       <h3 className="font-semibold text-lg">{idea.title}</h3>
                       {idea.summary && (
                         <p className="text-gray-600 mt-2">{idea.summary}</p>
+                      )}
+                      {/* 元ネタのURL */}
+                      {idea.sourceUrls && idea.sourceUrls.length > 0 && (
+                        <div className="mt-3">
+                          <p className="text-sm font-semibold text-gray-700 mb-1">元ネタ:</p>
+                          <div className="flex flex-wrap gap-2">
+                            {idea.sourceUrls.map((source: any, index: number) => (
+                              <a
+                                key={index}
+                                href={source.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-sm text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-1"
+                              >
+                                <span className="text-xs">🔗</span>
+                                <span className="truncate max-w-xs">{source.title || source.url}</span>
+                                <span className="text-xs text-gray-500">({source.source})</span>
+                              </a>
+                            ))}
+                          </div>
+                        </div>
                       )}
                       <div className="flex gap-2 mt-2">
                         <span
