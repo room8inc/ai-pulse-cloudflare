@@ -239,30 +239,48 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* 最新の公式アップデート */}
+      {/* 最新の公式アップデート・メディア情報 */}
       <div className="mb-8">
-        <h2 className="text-2xl font-semibold mb-4">最新の公式アップデート</h2>
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-2xl font-semibold">最新の公式アップデート・メディア情報</h2>
+          <span className="text-sm text-gray-500">
+            {stats?.recentOfficial?.length || 0}件
+          </span>
+        </div>
         <div className="border rounded-lg overflow-hidden">
           {stats?.recentOfficial && stats.recentOfficial.length > 0 ? (
             <ul className="divide-y">
-              {stats.recentOfficial.slice(0, 5).map((item: any) => (
+              {stats.recentOfficial.slice(0, 10).map((item: any) => (
                 <li key={item.id} className="p-4 hover:bg-gray-50">
-                  <a
-                    href={item.url || '#'}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-600 hover:underline"
-                  >
-                    <h3 className="font-semibold">{item.title}</h3>
-                  </a>
-                  <p className="text-sm text-gray-500 mt-1">
-                    {item.source} • {new Date(item.published_at).toLocaleDateString('ja-JP')}
-                  </p>
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <a
+                        href={item.url || '#'}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:underline"
+                      >
+                        <h3 className="font-semibold">{item.title}</h3>
+                      </a>
+                      <p className="text-sm text-gray-500 mt-1">
+                        {item.source} • {new Date(item.created_at || item.published_at).toLocaleDateString('ja-JP')} {new Date(item.created_at || item.published_at).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    </div>
+                    <span className={`ml-2 px-2 py-1 rounded text-xs ${
+                      item.source_type === 'media' 
+                        ? 'bg-blue-100 text-blue-800' 
+                        : 'bg-gray-100 text-gray-800'
+                    }`}>
+                      {item.source_type === 'media' ? 'メディア' : '公式'}
+                    </span>
+                  </div>
                 </li>
               ))}
             </ul>
           ) : (
-            <div className="p-4 text-gray-500">データがありません</div>
+            <div className="p-4 text-gray-500">
+              データがありません。「📰 公式・メディア」ボタンをクリックしてデータを取得してください。
+            </div>
           )}
         </div>
       </div>

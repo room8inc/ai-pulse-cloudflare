@@ -61,11 +61,16 @@ export async function GET(request: NextRequest) {
           }
           
           // 最新7日間の情報のみ取得（古い情報を除外）
-          if (publishedAt && publishedAt < sevenDaysAgo) {
-            continue; // 7日より古い情報はスキップ
+          // ただし、メディアソースの場合は最新30日間まで取得（実践的な情報を優先）
+          const daysAgo = feed.type === 'media' ? 30 : 7;
+          const cutoffDate = new Date();
+          cutoffDate.setDate(cutoffDate.getDate() - daysAgo);
+          
+          if (publishedAt && publishedAt < cutoffDate) {
+            continue; // 指定日数より古い情報はスキップ
           }
           
-          // 日付がない場合は、現在時刻から7日以内と仮定（RSSフィードの最新情報として扱う）
+          // 日付がない場合は、現在時刻から指定日数以内と仮定（RSSフィードの最新情報として扱う）
           if (!publishedAt) {
             publishedAt = new Date(); // 日付がない場合は現在時刻を使用
           }

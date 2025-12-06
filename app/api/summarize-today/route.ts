@@ -10,25 +10,43 @@ export async function GET(request: NextRequest) {
   const supabase = createSupabaseClient();
 
   try {
-    // 今日のデータを取得
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const todayStart = today.toISOString();
+    // 最新のデータを取得（過去7日間、新しい順）
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    const sevenDaysAgoStart = sevenDaysAgo.toISOString();
 
-    // 公式情報（過去24時間）
+    // 公式情報・メディア情報（過去7日間、新しい順）
     const { data: official } = supabase
       .from('raw_events')
       .select('*')
-      .eq('source_type', 'official')
-      .gte('created_at', todayStart)
+      .in('source_type', ['official', 'media'])
+      .gte('created_at', sevenDaysAgoStart)
       .all();
+    
+    // created_atでソート（新しい順）
+    if (official) {
+      official.sort((a: any, b: any) => {
+        const dateA = new Date(a.created_at || 0).getTime();
+        const dateB = new Date(b.created_at || 0).getTime();
+        return dateB - dateA;
+      });
+    }
 
-    // コミュニティの声（過去24時間）
+    // コミュニティの声（過去7日間、新しい順）
     const { data: community } = supabase
       .from('user_voices')
       .select('*')
-      .gte('created_at', todayStart)
+      .gte('created_at', sevenDaysAgoStart)
       .all();
+    
+    // created_atでソート（新しい順）
+    if (community) {
+      community.sort((a: any, b: any) => {
+        const dateA = new Date(a.created_at || 0).getTime();
+        const dateB = new Date(b.created_at || 0).getTime();
+        return dateB - dateA;
+      });
+    }
 
     // 最新のトレンド（過去7日間）
     const sevenDaysAgo = new Date();

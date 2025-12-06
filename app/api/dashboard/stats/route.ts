@@ -19,22 +19,39 @@ export async function GET(request: NextRequest) {
       .gte('created_at', todayStart)
       .all();
 
-    // 最新の公式アップデート（過去7日間）
+    // 最新の公式アップデート・メディア情報（過去7日間、created_atでソート）
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
     const { data: recentOfficial } = db
       .from('raw_events')
       .select('*')
-      .eq('source_type', 'official')
-      .gte('published_at', sevenDaysAgo.toISOString())
+      .in('source_type', ['official', 'media'])
+      .gte('created_at', sevenDaysAgo.toISOString())
       .all();
 
-    // 最新のコミュニティの声（過去7日間）
+    // 最新のコミュニティの声（過去7日間、created_atでソート）
     const { data: recentVoices } = db
       .from('user_voices')
       .select('*')
-      .gte('published_at', sevenDaysAgo.toISOString())
+      .gte('created_at', sevenDaysAgo.toISOString())
       .all();
+    
+    // created_atでソート（新しい順）
+    if (recentOfficial) {
+      recentOfficial.sort((a: any, b: any) => {
+        const dateA = new Date(a.created_at || a.published_at || 0).getTime();
+        const dateB = new Date(b.created_at || b.published_at || 0).getTime();
+        return dateB - dateA;
+      });
+    }
+    
+    if (recentVoices) {
+      recentVoices.sort((a: any, b: any) => {
+        const dateA = new Date(a.created_at || a.published_at || 0).getTime();
+        const dateB = new Date(b.created_at || b.published_at || 0).getTime();
+        return dateB - dateA;
+      });
+    }
 
     // ブログ候補の数
     const { data: blogIdeas } = db
