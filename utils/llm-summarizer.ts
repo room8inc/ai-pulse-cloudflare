@@ -73,6 +73,18 @@ async function generateWithOpenAI(input: SummaryInput): Promise<{
     .map((t: any) => `- ${t.keyword}: ${t.growthRate?.toFixed(1) || 0}% 増加`)
     .join('\n');
 
+  // Search Consoleの検索クエリ（人気キーワード）
+  const searchQueriesText = input.searchQueries
+    ?.slice(0, 10)
+    .map((q: any) => `- "${q.query}": クリック数 ${q.clicks || 0}, インプレッション ${q.impressions || 0}, CTR ${q.ctr?.toFixed(2) || 0}%`)
+    .join('\n') || 'なし';
+
+  // 人気記事の傾向
+  const popularPostsText = input.popularPosts
+    ?.slice(0, 5)
+    .map((p: any) => `- "${p.title}": PV ${p.page_views || 0}, 滞在時間 ${Math.round(p.avg_time_on_page || 0)}秒`)
+    .join('\n') || 'なし';
+
   const prompt = `以下のAI関連の最新情報を分析して、ブログ記事のネタを生成してください。
 
 ## 公式情報
@@ -84,6 +96,12 @@ ${communityText || 'なし'}
 ## トレンド
 ${trendsText || 'なし'}
 
+## 検索クエリ（Search Console - ユーザーが検索しているキーワード）
+${searchQueriesText}
+
+## 人気記事（過去のパフォーマンス）
+${popularPostsText}
+
 以下の形式でJSONを返してください：
 {
   "summary": "今日のサマリー（200文字程度）",
@@ -93,7 +111,9 @@ ${trendsText || 'なし'}
       "summary": "記事の要約（150-200文字、具体的な内容を含む）",
       "content": "記事の詳細内容（800-1000文字、実際に記事に使える具体的な情報）",
       "sources": ["source_id1", "source_id2"],
-      "priority": "high" | "medium" | "low"
+      "priority": "high" | "medium" | "low",
+      "recommended_keywords": ["キーワード1", "キーワード2", "キーワード3"],
+      "seo_recommendations": "SEO推奨事項（200文字程度）：どのキーワードを狙うべきか、どんな記事構成が良いか、過去の人気記事の傾向を踏まえた推奨事項"
     }
   ]
 }
@@ -245,6 +265,18 @@ async function generateWithAnthropic(input: SummaryInput): Promise<{
     .map((t: any) => `- ${t.keyword}: ${t.growthRate?.toFixed(1) || 0}% 増加`)
     .join('\n');
 
+  // Search Consoleの検索クエリ（人気キーワード）
+  const searchQueriesText = input.searchQueries
+    ?.slice(0, 10)
+    .map((q: any) => `- "${q.query}": クリック数 ${q.clicks || 0}, インプレッション ${q.impressions || 0}, CTR ${q.ctr?.toFixed(2) || 0}%`)
+    .join('\n') || 'なし';
+
+  // 人気記事の傾向
+  const popularPostsText = input.popularPosts
+    ?.slice(0, 5)
+    .map((p: any) => `- "${p.title}": PV ${p.page_views || 0}, 滞在時間 ${Math.round(p.avg_time_on_page || 0)}秒`)
+    .join('\n') || 'なし';
+
   const prompt = `以下のAI関連の最新情報を分析して、ブログ記事のネタを生成してください。
 
 ## 公式情報
@@ -256,6 +288,12 @@ ${communityText || 'なし'}
 ## トレンド
 ${trendsText || 'なし'}
 
+## 検索クエリ（Search Console - ユーザーが検索しているキーワード）
+${searchQueriesText}
+
+## 人気記事（過去のパフォーマンス）
+${popularPostsText}
+
 以下の形式でJSONを返してください：
 {
   "summary": "今日のサマリー（200文字程度）",
@@ -265,7 +303,9 @@ ${trendsText || 'なし'}
       "summary": "記事の要約（150-200文字、具体的な内容を含む）",
       "content": "記事の詳細内容（800-1000文字、実際に記事に使える具体的な情報）",
       "sources": ["source_id1", "source_id2"],
-      "priority": "high" | "medium" | "low"
+      "priority": "high" | "medium" | "low",
+      "recommended_keywords": ["キーワード1", "キーワード2", "キーワード3"],
+      "seo_recommendations": "SEO推奨事項（200文字程度）：どのキーワードを狙うべきか、どんな記事構成が良いか、過去の人気記事の傾向を踏まえた推奨事項"
     }
   ]
 }
@@ -405,6 +445,18 @@ async function generateWithGemini(input: SummaryInput): Promise<{
     .map((t: any) => `- ${t.keyword}: ${t.growthRate?.toFixed(1) || 0}% 増加`)
     .join('\n');
 
+  // Search Consoleの検索クエリ（人気キーワード）
+  const searchQueriesText = input.searchQueries
+    ?.slice(0, 10)
+    .map((q: any) => `- "${q.query}": クリック数 ${q.clicks || 0}, インプレッション ${q.impressions || 0}, CTR ${q.ctr?.toFixed(2) || 0}%`)
+    .join('\n') || 'なし';
+
+  // 人気記事の傾向
+  const popularPostsText = input.popularPosts
+    ?.slice(0, 5)
+    .map((p: any) => `- "${p.title}": PV ${p.page_views || 0}, 滞在時間 ${Math.round(p.avg_time_on_page || 0)}秒`)
+    .join('\n') || 'なし';
+
   const prompt = `以下のAI関連の最新情報を分析して、ブログ記事のネタを生成してください。
 
 ## 公式情報
@@ -416,6 +468,12 @@ ${communityText || 'なし'}
 ## トレンド
 ${trendsText || 'なし'}
 
+## 検索クエリ（Search Console - ユーザーが検索しているキーワード）
+${searchQueriesText}
+
+## 人気記事（過去のパフォーマンス）
+${popularPostsText}
+
 以下の形式でJSONを返してください：
 {
   "summary": "今日のサマリー（200文字程度）",
@@ -425,7 +483,9 @@ ${trendsText || 'なし'}
       "summary": "記事の要約（150-200文字、具体的な内容を含む）",
       "content": "記事の詳細内容（800-1000文字、実際に記事に使える具体的な情報）",
       "sources": ["source_id1", "source_id2"],
-      "priority": "high" | "medium" | "low"
+      "priority": "high" | "medium" | "low",
+      "recommended_keywords": ["キーワード1", "キーワード2", "キーワード3"],
+      "seo_recommendations": "SEO推奨事項（200文字程度）：どのキーワードを狙うべきか、どんな記事構成が良いか、過去の人気記事の傾向を踏まえた推奨事項"
     }
   ]
 }
