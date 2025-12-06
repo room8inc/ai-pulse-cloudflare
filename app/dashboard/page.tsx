@@ -379,6 +379,33 @@ export default function DashboardPage() {
                           </div>
                         </div>
                       )}
+                      {/* SEO推奨事項 */}
+                      {(idea.recommended_keywords && idea.recommended_keywords.length > 0) || idea.seo_recommendations ? (
+                        <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                          <p className="text-sm font-semibold text-blue-900 mb-2">📊 SEO推奨事項</p>
+                          {idea.recommended_keywords && idea.recommended_keywords.length > 0 && (
+                            <div className="mb-2">
+                              <p className="text-xs font-semibold text-gray-700 mb-1">推奨キーワード:</p>
+                              <div className="flex flex-wrap gap-1">
+                                {idea.recommended_keywords.map((keyword: string, index: number) => (
+                                  <span
+                                    key={index}
+                                    className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs"
+                                  >
+                                    {keyword}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          {idea.seo_recommendations && (
+                            <div>
+                              <p className="text-xs font-semibold text-gray-700 mb-1">記事作成の推奨:</p>
+                              <p className="text-sm text-gray-700 leading-relaxed">{idea.seo_recommendations}</p>
+                            </div>
+                          )}
+                        </div>
+                      ) : null}
                       <div className="flex gap-2 mt-2">
                         <span
                           className={`px-2 py-1 rounded text-xs ${
