@@ -25,42 +25,102 @@ interface BlogIdea {
   created_at: string;
 }
 
+interface FetchStatus {
+  [key: string]: {
+    loading: boolean;
+    success: boolean;
+    error: string | null;
+    message: string | null;
+  };
+}
+
 export default function DashboardPage() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [blogIdeas, setBlogIdeas] = useState<BlogIdea[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [fetchStatus, setFetchStatus] = useState<FetchStatus>({});
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-
-        // 統計データを取得
-        const statsResponse = await fetch('/api/dashboard/stats');
-        const statsResult = await statsResponse.json();
-        if (statsResult.success) {
-          setStats(statsResult.data);
-        }
-
-        // ブログ候補を取得
-        const ideasResponse = await fetch('/api/dashboard/blog-ideas');
-        const ideasResult = await ideasResponse.json();
-        if (ideasResult.success) {
-          setBlogIdeas(ideasResult.data || []);
-        } else {
-          console.error('Failed to fetch blog ideas:', ideasResult.error);
-          setBlogIdeas([]);
-        }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Unknown error');
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchData();
   }, []);
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // 統計データを取得
+      const statsResponse = await fetch('/api/dashboard/stats');
+      const statsResult = await statsResponse.json();
+      if (statsResult.success) {
+        setStats(statsResult.data);
+      }
+
+      // ブログ候補を取得
+      const ideasResponse = await fetch('/api/dashboard/blog-ideas');
+      const ideasResult = await ideasResponse.json();
+      if (ideasResult.success) {
+        setBlogIdeas(ideasResult.data || []);
+      } else {
+        console.error('Failed to fetch blog ideas:', ideasResult.error);
+        setBlogIdeas([]);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unknown error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchApiData = async (endpoint: string, name: string) => {
+    setFetchStatus((prev) => ({
+      ...prev,
+      [endpoint]: { loading: true, success: false, error: null, message: null },
+    }));
+
+    try {
+      const response = await fetch(endpoint);
+      const result = await response.json();
+
+      if (result.success) {
+        setFetchStatus((prev) => ({
+          ...prev,
+          [endpoint]: {
+            loading: false,
+            success: true,
+            error: null,
+            message: result.message || `${name}を取得しました`,
+          },
+        }));
+
+        // データ取得後、ダッシュボードを更新
+        setTimeout(() => {
+          fetchData();
+        }, 1000);
+      } else {
+        setFetchStatus((prev) => ({
+          ...prev,
+          [endpoint]: {
+            loading: false,
+            success: false,
+            error: result.error || 'エラーが発生しました',
+            message: null,
+          },
+        }));
+      }
+    } catch (err) {
+      setFetchStatus((prev) => ({
+        ...prev,
+        [endpoint]: {
+          loading: false,
+          success: false,
+          error: err instanceof Error ? err.message : 'Unknown error',
+          message: null,
+        },
+      }));
+    }
+  };
 
   const updateBlogIdeaStatus = async (id: string, status: string) => {
     try {
@@ -100,7 +160,68 @@ export default function DashboardPage() {
 
   return (
     <main className="container mx-auto p-8">
-      <h1 className="text-3xl font-bold mb-6">ダッシュボード</h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold">ダッシュボード</h1>
+        <button
+          onClick={fetchData}
+          disabled={loading}
+          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-gray-400 disabled:cursor-not-allowed"
+        >
+          {loading ? '更新中...' : '🔄 更新'}
+        </button>
+      </div>
+
+      {/* データ取得ボタン */}
+      <div className="mb-8 p-4 bg-gray-50 rounded-lg">
+        <h2 className="text-lg font-semibold mb-4">データ取得</h2>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <button
+            onClick={() => fetchApiData('/api/fetch-official', '公式情報・メディア')}
+            disabled={fetchStatus['/api/fetch-official']?.loading}
+            className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-sm"
+          >
+            {fetchStatus['/api/fetch-official']?.loading ? '取得中...' : '📰 公式・メディア'}
+          </button>
+          <button
+            onClick={() => fetchApiData('/api/fetch-community', 'コミュニティ')}
+            disabled={fetchStatus['/api/fetch-community']?.loading}
+            className="px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-sm"
+          >
+            {fetchStatus['/api/fetch-community']?.loading ? '取得中...' : '💬 コミュニティ'}
+          </button>
+          <button
+            onClick={() => fetchApiData('/api/analyze-trends', 'トレンド分析')}
+            disabled={fetchStatus['/api/analyze-trends']?.loading}
+            className="px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-sm"
+          >
+            {fetchStatus['/api/analyze-trends']?.loading ? '分析中...' : '📈 トレンド分析'}
+          </button>
+          <button
+            onClick={() => fetchApiData('/api/summarize-today', 'ブログ候補生成')}
+            disabled={fetchStatus['/api/summarize-today']?.loading}
+            className="px-4 py-2 bg-indigo-500 text-white rounded hover:bg-indigo-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-sm"
+          >
+            {fetchStatus['/api/summarize-today']?.loading ? '生成中...' : '✨ ブログ候補生成'}
+          </button>
+        </div>
+        
+        {/* ステータスメッセージ */}
+        {Object.entries(fetchStatus).map(([endpoint, status]) => {
+          if (!status.message && !status.error) return null;
+          return (
+            <div
+              key={endpoint}
+              className={`mt-2 p-2 rounded text-sm ${
+                status.success
+                  ? 'bg-green-100 text-green-800'
+                  : 'bg-red-100 text-red-800'
+              }`}
+            >
+              {status.message || status.error}
+            </div>
+          );
+        })}
+      </div>
 
       {/* 統計カード */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
