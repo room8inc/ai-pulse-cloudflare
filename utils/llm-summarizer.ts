@@ -428,9 +428,9 @@ async function generateWithGemini(input: SummaryInput): Promise<{
 }> {
   const { GoogleGenerativeAI } = await import('@google/generative-ai');
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-  // gemini-1.5-pro または gemini-pro を使用（利用可能な最新モデル）
+  // 最新モデル: Gemini 2.5 Flash を優先、利用できない場合は Gemini 3.0 Pro を試す
   const model = genAI.getGenerativeModel({ 
-    model: 'gemini-1.5-pro',
+    model: 'gemini-2.5-flash',
     generationConfig: {
       responseMimeType: 'application/json',
     },
@@ -595,12 +595,12 @@ ${popularPostsText}
   } catch (error: any) {
     console.error('Error calling Gemini API:', error);
     
-    // gemini-3.0-pro が利用できない場合は gemini-2.5-flash を試す
+    // gemini-2.5-flash が利用できない場合は gemini-3.0-pro を試す
     if (error?.message?.includes('model') || error?.message?.includes('not found')) {
       try {
-        console.log('Falling back to gemini-2.5-flash');
+        console.log('Falling back to gemini-3.0-pro');
         const fallbackModel = genAI.getGenerativeModel({ 
-          model: 'gemini-2.5-flash',
+          model: 'gemini-3.0-pro',
           generationConfig: {
             responseMimeType: 'application/json',
           },
