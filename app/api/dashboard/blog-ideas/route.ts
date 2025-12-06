@@ -28,11 +28,24 @@ export async function GET(request: NextRequest) {
         
         // raw_eventsからURLを取得
         for (const sourceId of sourceIds) {
-          const { data: rawEvent } = db
-            .from('raw_events')
-            .select('title, url, source')
-            .eq('id', sourceId)
-            .single();
+          // sourceIdがURLの場合は、URLで検索
+          let rawEvent = null;
+          if (sourceId.startsWith('http')) {
+            const { data: events } = db
+              .from('raw_events')
+              .select('title, url, source')
+              .eq('url', sourceId)
+              .all();
+            rawEvent = events && events.length > 0 ? events[0] : null;
+          } else {
+            // IDの場合は通常通り検索
+            const result = db
+              .from('raw_events')
+              .select('title, url, source')
+              .eq('id', sourceId)
+              .single();
+            rawEvent = result.data;
+          }
           
           if (rawEvent && rawEvent.url) {
             sourceUrls.push({
@@ -40,23 +53,33 @@ export async function GET(request: NextRequest) {
               url: rawEvent.url,
               source: rawEvent.source || 'unknown',
             });
+            continue; // 見つかったら次へ
           }
           
           // user_voicesからも取得（raw_eventsにない場合）
-          if (!rawEvent) {
-            const { data: userVoice } = db
+          let userVoice = null;
+          if (sourceId.startsWith('http')) {
+            const { data: voices } = db
+              .from('user_voices')
+              .select('title, url, source')
+              .eq('url', sourceId)
+              .all();
+            userVoice = voices && voices.length > 0 ? voices[0] : null;
+          } else {
+            const result = db
               .from('user_voices')
               .select('title, url, source')
               .eq('id', sourceId)
               .single();
-            
-            if (userVoice && userVoice.url) {
-              sourceUrls.push({
-                title: userVoice.title || '元ネタ',
-                url: userVoice.url,
-                source: userVoice.source || 'unknown',
-              });
-            }
+            userVoice = result.data;
+          }
+          
+          if (userVoice && userVoice.url) {
+            sourceUrls.push({
+              title: userVoice.title || '元ネタ',
+              url: userVoice.url,
+              source: userVoice.source || 'unknown',
+            });
           }
         }
       } catch (error) {
