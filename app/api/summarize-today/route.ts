@@ -49,12 +49,10 @@ export async function GET(request: NextRequest) {
     }
 
     // 最新のトレンド（過去7日間）
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
     const { data: trends } = supabase
       .from('trends')
       .select('*')
-      .gte('created_at', sevenDaysAgo.toISOString())
+      .gte('created_at', sevenDaysAgoStart)
       .all();
 
     // LLMでサマリーを生成
