@@ -119,7 +119,7 @@ ${popularPostsText}
       "title": "記事タイトル（具体的で実践的）",
       "summary": "記事作成アドバイス（300-400文字）：元ネタの情報を基に、どんなブログを書くと良いか具体的にアドバイス。記事の構成、見出し案、含めるべき内容、読者に伝えるべきポイントなどを具体的に記載",
       "content": "記事の詳細内容（800-1000文字、実際に記事に使える具体的な情報）",
-      "sources": ["source_id1", "source_id2"],
+      "sources": ["source_id1", "source_id2"], // 元ネタのIDを配列で指定（上記の【ID: xxx】のIDを使用）
       "priority": "high" | "medium" | "low",
       "recommended_keywords": ["キーワード1", "キーワード2", "キーワード3"],
       "seo_recommendations": "SEO推奨事項（300-400文字）：AnalyticsとSearch Consoleのデータを基に、狙うべきキーワード、記事の方針、構成の推奨、見出しに含めるべきキーワード、記事の長さ、過去の人気記事の傾向を踏まえた具体的な推奨事項"
@@ -337,7 +337,7 @@ ${popularPostsText}
       "title": "記事タイトル（具体的で実践的）",
       "summary": "記事作成アドバイス（300-400文字）：元ネタの情報を基に、どんなブログを書くと良いか具体的にアドバイス。記事の構成、見出し案、含めるべき内容、読者に伝えるべきポイントなどを具体的に記載",
       "content": "記事の詳細内容（800-1000文字、実際に記事に使える具体的な情報）",
-      "sources": ["source_id1", "source_id2"],
+      "sources": ["source_id1", "source_id2"], // 元ネタのIDを配列で指定（上記の【ID: xxx】のIDを使用）
       "priority": "high" | "medium" | "low",
       "recommended_keywords": ["キーワード1", "キーワード2", "キーワード3"],
       "seo_recommendations": "SEO推奨事項（300-400文字）：AnalyticsとSearch Consoleのデータを基に、狙うべきキーワード、記事の方針、構成の推奨、見出しに含めるべきキーワード、記事の長さ、過去の人気記事の傾向を踏まえた具体的な推奨事項"
@@ -549,7 +549,7 @@ ${popularPostsText}
       "title": "記事タイトル（具体的で実践的）",
       "summary": "記事作成アドバイス（300-400文字）：元ネタの情報を基に、どんなブログを書くと良いか具体的にアドバイス。記事の構成、見出し案、含めるべき内容、読者に伝えるべきポイントなどを具体的に記載",
       "content": "記事の詳細内容（800-1000文字、実際に記事に使える具体的な情報）",
-      "sources": ["source_id1", "source_id2"],
+      "sources": ["source_id1", "source_id2"], // 元ネタのIDを配列で指定（上記の【ID: xxx】のIDを使用）
       "priority": "high" | "medium" | "low",
       "recommended_keywords": ["キーワード1", "キーワード2", "キーワード3"],
       "seo_recommendations": "SEO推奨事項（300-400文字）：AnalyticsとSearch Consoleのデータを基に、狙うべきキーワード、記事の方針、構成の推奨、見出しに含めるべきキーワード、記事の長さ、過去の人気記事の傾向を踏まえた具体的な推奨事項"
