@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseClient } from '@/lib/db';
-import { OFFICIAL_RSS_FEEDS } from '@/lib/rss-feeds';
+import { ALL_RSS_FEEDS } from '@/lib/rss-feeds';
 import { fetchRSSFeed } from '@/utils/rss-parser';
 
 /**
@@ -27,8 +27,8 @@ export async function GET(request: NextRequest) {
     // 最新7日間のみ取得（古い情報を除外）
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-    // 各RSSフィードを取得
-    for (const feed of OFFICIAL_RSS_FEEDS) {
+    // 各RSSフィードを取得（公式 + メディア）
+    for (const feed of ALL_RSS_FEEDS) {
       try {
         const items = await fetchRSSFeed(feed.url);
         results.total += items.length;
@@ -70,12 +70,63 @@ export async function GET(request: NextRequest) {
             publishedAt = new Date(); // 日付がない場合は現在時刻を使用
           }
 
+          // 重要度フィルタリング
+          const title = (item.title || '').toLowerCase();
+          const content = ((item.content || item.contentSnippet || '') + ' ' + title).toLowerCase();
+          
+          // 公式発表の場合: アップデート情報とガイドのみを優先
+          if (feed.type === 'official') {
+            const isUpdate = 
+              title.includes('update') || title.includes('release') || title.includes('アップデート') ||
+              title.includes('new') || title.includes('announcing') || title.includes('introducing') ||
+              title.includes('version') || title.includes('v') && /\d/.test(title);
+            
+            const isGuide = 
+              title.includes('guide') || title.includes('how to') || title.includes('使い方') ||
+              title.includes('tutorial') || title.includes('チュートリアル') || title.includes('ガイド') ||
+              title.includes('best practices') || title.includes('ベストプラクティス');
+            
+            // アップデート情報でもガイドでもない場合は優先度を下げる
+            if (!isUpdate && !isGuide) {
+              // ビジネスニュースや一般的な発表は除外
+              const isBusinessNews = 
+                title.includes('partnership') || title.includes('collaboration') || title.includes('提携') ||
+                title.includes('協業') || title.includes('acquisition') || title.includes('買収') ||
+                title.includes('investment') || title.includes('投資') || title.includes('funding');
+              
+              if (isBusinessNews) {
+                continue; // ビジネスニュースは除外
+              }
+            }
+          }
+          
+          // メディアの場合: 実践的な情報を優先
+          if (feed.type === 'media') {
+            const isPractical = 
+              title.includes('使い方') || title.includes('コツ') || title.includes('使える') ||
+              title.includes('使いこなす') || title.includes('実践') || title.includes('プロ') ||
+              title.includes('how to') || title.includes('guide') || title.includes('tips') ||
+              title.includes('performance') || title.includes('性能') || title.includes('比較') ||
+              title.includes('evaluation') || title.includes('評価') || title.includes('レビュー');
+            
+            // ビジネスニュースを除外
+            const isBusinessNews = 
+              title.includes('協業') || title.includes('提携') || title.includes('partnership') ||
+              title.includes('collaboration') || title.includes('買収') || title.includes('acquisition') ||
+              title.includes('投資') || title.includes('investment') || title.includes('funding');
+            
+            // 実践的な情報でない、またはビジネスニュースの場合は除外
+            if (!isPractical || isBusinessNews) {
+              continue;
+            }
+          }
+
           // raw_eventsテーブルに挿入
           const { error: insertError } = supabase
             .from('raw_events')
             .insert({
               source: feed.source,
-              source_type: 'official',
+              source_type: feed.type === 'official' ? 'official' : 'media',
               title: item.title,
               content: item.content || item.contentSnippet || '',
               url: item.link || null,
@@ -84,6 +135,8 @@ export async function GET(request: NextRequest) {
               metadata: JSON.stringify({
                 categories: item.categories || [],
                 feed_name: feed.name,
+                feed_type: feed.type,
+                feed_priority: feed.priority,
               }),
             });
 
