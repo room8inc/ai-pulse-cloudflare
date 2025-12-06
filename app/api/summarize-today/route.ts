@@ -126,6 +126,8 @@ export async function GET(request: NextRequest) {
         metadata: JSON.stringify({
           generated_at: new Date().toISOString(),
           generated_by: 'summarize-today',
+          recommended_keywords: idea.recommended_keywords || [],
+          seo_recommendations: idea.seo_recommendations || '',
         }),
       });
 
