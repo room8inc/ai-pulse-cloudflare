@@ -79,29 +79,36 @@ export async function GET(request: NextRequest) {
           const title = (item.title || '').toLowerCase();
           const content = ((item.content || item.contentSnippet || '') + ' ' + title).toLowerCase();
           
-          // 公式発表の場合: アップデート情報とガイドのみを優先
+          // 公式発表の場合: アップデート情報とガイドのみを取得（厳格にフィルタリング）
+          // 公式ブログは日々更新されるわけではないため、重要な情報のみを取得
           if (feed.type === 'official') {
             const isUpdate = 
               title.includes('update') || title.includes('release') || title.includes('アップデート') ||
               title.includes('new') || title.includes('announcing') || title.includes('introducing') ||
-              title.includes('version') || title.includes('v') && /\d/.test(title);
+              title.includes('version') || (title.includes('v') && /\d/.test(title)) ||
+              title.includes('gpt') || title.includes('claude') || title.includes('gemini') ||
+              title.includes('model') || title.includes('api');
             
             const isGuide = 
               title.includes('guide') || title.includes('how to') || title.includes('使い方') ||
               title.includes('tutorial') || title.includes('チュートリアル') || title.includes('ガイド') ||
-              title.includes('best practices') || title.includes('ベストプラクティス');
+              title.includes('best practices') || title.includes('ベストプラクティス') ||
+              title.includes('documentation') || title.includes('docs');
             
-            // アップデート情報でもガイドでもない場合は優先度を下げる
+            // アップデート情報でもガイドでもない場合は除外
             if (!isUpdate && !isGuide) {
-              // ビジネスニュースや一般的な発表は除外
-              const isBusinessNews = 
-                title.includes('partnership') || title.includes('collaboration') || title.includes('提携') ||
-                title.includes('協業') || title.includes('acquisition') || title.includes('買収') ||
-                title.includes('investment') || title.includes('投資') || title.includes('funding');
-              
-              if (isBusinessNews) {
-                continue; // ビジネスニュースは除外
-              }
+              continue; // 公式ブログは重要な情報のみを取得
+            }
+            
+            // ビジネスニュースは除外
+            const isBusinessNews = 
+              title.includes('partnership') || title.includes('collaboration') || title.includes('提携') ||
+              title.includes('協業') || title.includes('acquisition') || title.includes('買収') ||
+              title.includes('investment') || title.includes('投資') || title.includes('funding') ||
+              title.includes('hiring') || title.includes('careers');
+            
+            if (isBusinessNews) {
+              continue; // ビジネスニュースは除外
             }
           }
           

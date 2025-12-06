@@ -12,7 +12,8 @@ export interface RSSFeed {
 
 /**
  * 公式発表のRSSフィード
- * 重要: アップデート情報とガイドのみを優先
+ * 注意: 公式ブログは日々更新されるわけではない（時々重要なアップデート情報のみ）
+ * 優先度を下げ、アップデート情報とガイドのみを取得
  */
 export const OFFICIAL_RSS_FEEDS: RSSFeed[] = [
   {
@@ -20,41 +21,41 @@ export const OFFICIAL_RSS_FEEDS: RSSFeed[] = [
     url: 'https://openai.com/blog/rss.xml',
     source: 'openai',
     type: 'official',
-    priority: 'high',
+    priority: 'medium', // 公式ブログは補完的に
   },
   {
     name: 'Anthropic Blog',
     url: 'https://www.anthropic.com/news/rss',
     source: 'anthropic',
     type: 'official',
-    priority: 'high',
+    priority: 'medium',
   },
   {
     name: 'Google DeepMind',
     url: 'https://deepmind.google/discover/blog/rss.xml',
     source: 'google-deepmind',
     type: 'official',
-    priority: 'high',
+    priority: 'medium',
   },
   {
     name: 'xAI',
     url: 'https://x.ai/blog/rss.xml',
     source: 'xai',
     type: 'official',
-    priority: 'high',
+    priority: 'medium',
   },
   {
     name: 'Microsoft AI Blog',
     url: 'https://blogs.microsoft.com/ai/feed/',
     source: 'microsoft-ai',
     type: 'official',
-    priority: 'high',
+    priority: 'medium',
   },
 ];
 
 /**
  * メディアソースのRSSフィード
- * 実践的な情報を提供するメディアを優先
+ * 日々更新されるIT系メディアを優先（実践的な情報を提供）
  */
 export const MEDIA_RSS_FEEDS: RSSFeed[] = [
   {
@@ -69,7 +70,21 @@ export const MEDIA_RSS_FEEDS: RSSFeed[] = [
     url: 'https://rss.itmedia.co.jp/rss/2.0/enterprise.xml',
     source: 'itmedia-enterprise',
     type: 'media',
-    priority: 'medium',
+    priority: 'high',
+  },
+  {
+    name: '@IT',
+    url: 'https://atmarkit.itmedia.co.jp/rss/ait.xml', // ITエキスパート向け
+    source: 'at-it',
+    type: 'media',
+    priority: 'high',
+  },
+  {
+    name: 'CodeZine',
+    url: 'https://codezine.jp/rss/new/20/index.xml', // エンジニア向け技術情報
+    source: 'codezine',
+    type: 'media',
+    priority: 'high',
   },
   {
     name: 'TechCrunch',
@@ -88,10 +103,14 @@ export const MEDIA_RSS_FEEDS: RSSFeed[] = [
 ];
 
 /**
- * すべてのRSSフィード（公式 + メディア）
+ * すべてのRSSフィード
+ * メディアソースを優先的に処理（日々更新されるため）
+ * 公式ブログは補完的に（時々重要なアップデート情報のみ）
  */
 export const ALL_RSS_FEEDS: RSSFeed[] = [
-  ...OFFICIAL_RSS_FEEDS,
+  // メディアソースを先に（優先的に処理）
   ...MEDIA_RSS_FEEDS,
+  // 公式ブログは後（補完的に）
+  ...OFFICIAL_RSS_FEEDS,
 ];
 
