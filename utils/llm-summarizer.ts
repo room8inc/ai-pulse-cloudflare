@@ -435,48 +435,7 @@ async function generateWithAnthropic(input: SummaryInput): Promise<{
   const { Anthropic } = await import('@anthropic-ai/sdk');
   const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-  // 公式情報を要約（より詳細な情報を含める）
-  // 公式情報を要約（より詳細な情報を含める、IDも含める）
-  const officialText = input.official
-    .slice(0, 15)
-    .map((item: any) => {
-      const content = item.content?.substring(0, 500) || item.title || '';
-      const url = item.url || '';
-      const id = item.id || '';
-      return `- 【ID: ${id}】${item.title}\n  URL: ${url}\n  内容: ${content}`;
-    })
-    .join('\n\n');
-
-  // コミュニティの声を要約（より詳細な情報を含める、IDも含める）
-  const communityText = input.community
-    .slice(0, 15)
-    .map((item: any) => {
-      const content = item.content?.substring(0, 500) || item.title || '';
-      const url = item.url || '';
-      const sentiment = item.sentiment || '';
-      const id = item.id || '';
-      return `- 【ID: ${id}】${item.title}\n  URL: ${url}\n  感情: ${sentiment}\n  内容: ${content}`;
-    })
-    .join('\n\n');
-
-  const trendsText = input.trends
-    .slice(0, 5)
-    .map((t: any) => `- ${t.keyword}: ${t.growthRate?.toFixed(1) || 0}% 増加`)
-    .join('\n');
-
-  // Search Consoleの検索クエリ（人気キーワード）
-  const searchQueriesText = input.searchQueries
-    ?.slice(0, 10)
-    .map((q: any) => `- "${q.query}": クリック数 ${q.clicks || 0}, インプレッション ${q.impressions || 0}, CTR ${q.ctr?.toFixed(2) || 0}%`)
-    .join('\n') || 'なし';
-
-  // 人気記事の傾向
-  const popularPostsText = input.popularPosts
-    ?.slice(0, 5)
-    .map((p: any) => `- "${p.title}": PV ${p.page_views || 0}, 滞在時間 ${Math.round(p.avg_time_on_page || 0)}秒`)
-    .join('\n') || 'なし';
-
-  const prompt = `以下のAI関連の最新情報を分析して、ブログ記事のネタを生成してください。
+  const prompt = generatePrompt(input);
 
 以下の形式でJSONを返してください：
 {
@@ -635,48 +594,7 @@ async function generateWithGemini(input: SummaryInput): Promise<{
     },
   });
 
-  // 公式情報を要約（より詳細な情報を含める）
-  // 公式情報を要約（より詳細な情報を含める、IDも含める）
-  const officialText = input.official
-    .slice(0, 15)
-    .map((item: any) => {
-      const content = item.content?.substring(0, 500) || item.title || '';
-      const url = item.url || '';
-      const id = item.id || '';
-      return `- 【ID: ${id}】${item.title}\n  URL: ${url}\n  内容: ${content}`;
-    })
-    .join('\n\n');
-
-  // コミュニティの声を要約（より詳細な情報を含める、IDも含める）
-  const communityText = input.community
-    .slice(0, 15)
-    .map((item: any) => {
-      const content = item.content?.substring(0, 500) || item.title || '';
-      const url = item.url || '';
-      const sentiment = item.sentiment || '';
-      const id = item.id || '';
-      return `- 【ID: ${id}】${item.title}\n  URL: ${url}\n  感情: ${sentiment}\n  内容: ${content}`;
-    })
-    .join('\n\n');
-
-  const trendsText = input.trends
-    .slice(0, 5)
-    .map((t: any) => `- ${t.keyword}: ${t.growthRate?.toFixed(1) || 0}% 増加`)
-    .join('\n');
-
-  // Search Consoleの検索クエリ（人気キーワード）
-  const searchQueriesText = input.searchQueries
-    ?.slice(0, 10)
-    .map((q: any) => `- "${q.query}": クリック数 ${q.clicks || 0}, インプレッション ${q.impressions || 0}, CTR ${q.ctr?.toFixed(2) || 0}%`)
-    .join('\n') || 'なし';
-
-  // 人気記事の傾向
-  const popularPostsText = input.popularPosts
-    ?.slice(0, 5)
-    .map((p: any) => `- "${p.title}": PV ${p.page_views || 0}, 滞在時間 ${Math.round(p.avg_time_on_page || 0)}秒`)
-    .join('\n') || 'なし';
-
-  const prompt = `以下のAI関連の最新情報を分析して、ブログ記事のネタを生成してください。
+  const prompt = generatePrompt(input);
 
 以下の形式でJSONを返してください：
 {
