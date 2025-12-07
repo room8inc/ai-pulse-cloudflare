@@ -122,4 +122,3 @@ SupabaseダッシュボードのSQL Editorで `001_initial_schema.sql` を実行
 ```bash
 supabase db push
 ```
-

@@ -6,6 +6,7 @@ import {
   analyzeSentimentTrend,
   detectMultiSourceMentions,
 } from '@/utils/trend-analyzer';
+import { analyzeTrendsWithAI } from '@/utils/trend-ai-analyzer';
 
 /**
  * トレンド分析を行うAPI
@@ -201,14 +202,93 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // AIによるトレンド分析を実行
+    let aiAnalysis = null;
+    try {
+      // 過去記事のパフォーマンスデータを取得
+      const { data: blogPosts } = supabase
+        .from('blog_posts')
+        .select('*')
+        .all();
+
+      // 人気記事を取得
+      const popularPosts = (blogPosts || [])
+        .filter((p: any) => p.page_views > 100)
+        .sort((a: any, b: any) => (b.page_views || 0) - (a.page_views || 0))
+        .slice(0, 10);
+
+      // AI分析を実行
+      aiAnalysis = await analyzeTrendsWithAI({
+        trends: trends,
+        searchQueries: searchQueries || [],
+        popularPosts: popularPosts || [],
+        blogPosts: blogPosts || [],
+        currentEvents: currentEvents || [],
+      });
+
+      // AI分析結果をtrendsテーブルに保存
+      const generateId = () => {
+        const randomBytes = new Uint8Array(16);
+        crypto.getRandomValues(randomBytes);
+        return Array.from(randomBytes)
+          .map(b => b.toString(16).padStart(2, '0'))
+          .join('')
+          .toLowerCase();
+      };
+
+      // 推奨キーワードを保存
+      for (const keyword of aiAnalysis.recommended_keywords) {
+        supabase.from('trends').insert({
+          id: generateId(),
+          keyword: keyword.keyword,
+          trend_type: 'ai_recommended_keyword',
+          value: keyword.opportunity_score,
+          previous_value: 0,
+          growth_rate: 0,
+          period_start: sevenDaysAgo.toISOString(),
+          period_end: now.toISOString(),
+          metadata: JSON.stringify({
+            detected_at: now.toISOString(),
+            reason: keyword.reason,
+            opportunity_score: keyword.opportunity_score,
+            competition_level: keyword.competition_level,
+            suggested_article_type: keyword.suggested_article_type,
+            analysis_type: 'ai_recommendation',
+          }),
+        });
+      }
+
+      // 記事戦略を保存
+      supabase.from('trends').insert({
+        id: generateId(),
+        keyword: 'ai_strategy_recommendations',
+        trend_type: 'ai_strategy',
+        value: 0,
+        previous_value: 0,
+        growth_rate: 0,
+        period_start: sevenDaysAgo.toISOString(),
+        period_end: now.toISOString(),
+        metadata: JSON.stringify({
+          detected_at: now.toISOString(),
+          strategy_recommendations: aiAnalysis.strategy_recommendations,
+          market_gaps: aiAnalysis.market_gaps,
+          analysis_type: 'ai_strategy',
+        }),
+      });
+    } catch (error) {
+      console.error('Error in AI trend analysis:', error);
+      // AI分析が失敗しても、基本的なトレンド分析は続行
+    }
+
     // ログを記録
     supabase.from('logs').insert({
       level: 'info',
       endpoint: '/api/analyze-trends',
-      message: `Analyzed trends: ${trends.length} rising keywords detected`,
+      message: `Analyzed trends: ${trends.length} rising keywords detected${aiAnalysis ? ', AI analysis completed' : ''}`,
       metadata: JSON.stringify({
         trendsCount: trends.length,
         mentionGrowthRate,
+        aiAnalysisCompleted: !!aiAnalysis,
       }),
     });
 
@@ -220,6 +300,7 @@ export async function GET(request: NextRequest) {
         mentionGrowthRate,
         currentMentionCount,
         previousMentionCount,
+        aiAnalysis: aiAnalysis || null,
       },
     });
   } catch (error) {

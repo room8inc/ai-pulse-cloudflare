@@ -13,6 +13,8 @@ interface Stats {
   };
   topTrends?: any[];
   topPosts?: any[];
+  aiRecommendedKeywords?: any[];
+  aiStrategy?: any;
 }
 
 interface BlogIdea {
@@ -287,6 +289,115 @@ export default function DashboardPage() {
           )}
         </div>
       </div>
+
+      {/* AI分析: これから狙うべきキーワード */}
+      {stats?.aiRecommendedKeywords && stats.aiRecommendedKeywords.length > 0 && (
+        <div className="mb-8">
+          <h2 className="text-2xl font-semibold mb-4">🎯 AI分析: これから狙うべきキーワード</h2>
+          <div className="border rounded-lg overflow-hidden bg-gradient-to-r from-purple-50 to-blue-50">
+            <ul className="divide-y">
+              {stats.aiRecommendedKeywords.map((keyword: any, index: number) => {
+                let metadata: any = {};
+                try {
+                  metadata = JSON.parse(keyword.metadata || '{}');
+                } catch (e) {
+                  // ignore
+                }
+                const opportunityScore = metadata.opportunity_score || 0;
+                const competitionLevel = metadata.competition_level || 'medium';
+                const suggestedArticleType = metadata.suggested_article_type || '';
+                const reason = metadata.reason || '';
+
+                return (
+                  <li key={keyword.id || index} className="p-4 hover:bg-white/50">
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <h3 className="font-semibold text-lg">{keyword.keyword}</h3>
+                          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                            opportunityScore >= 80 ? 'bg-green-100 text-green-800' :
+                            opportunityScore >= 60 ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-gray-100 text-gray-800'
+                          }`}>
+                            機会スコア: {opportunityScore}
+                          </span>
+                          <span className={`px-3 py-1 rounded-full text-xs ${
+                            competitionLevel === 'low' ? 'bg-blue-100 text-blue-800' :
+                            competitionLevel === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-red-100 text-red-800'
+                          }`}>
+                            競合: {competitionLevel === 'low' ? '低' : competitionLevel === 'medium' ? '中' : '高'}
+                          </span>
+                          {suggestedArticleType && (
+                            <span className="px-3 py-1 rounded-full text-xs bg-indigo-100 text-indigo-800">
+                              {suggestedArticleType}
+                            </span>
+                          )}
+                        </div>
+                        {reason && (
+                          <p className="text-sm text-gray-700 mt-2 leading-relaxed">{reason}</p>
+                        )}
+                      </div>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        </div>
+      )}
+
+      {/* AI分析: 記事戦略 */}
+      {stats?.aiStrategy && (
+        <div className="mb-8">
+          <h2 className="text-2xl font-semibold mb-4">📊 AI分析: 記事戦略</h2>
+          <div className="border rounded-lg p-6 bg-gradient-to-r from-green-50 to-blue-50">
+            {(() => {
+              let strategyMetadata: any = {};
+              try {
+                strategyMetadata = JSON.parse(stats.aiStrategy.metadata || '{}');
+              } catch (e) {
+                // ignore
+              }
+              const strategyRecommendations = strategyMetadata.strategy_recommendations || '';
+              const marketGaps = strategyMetadata.market_gaps || [];
+
+              return (
+                <div>
+                  {strategyRecommendations && (
+                    <div className="mb-4">
+                      <h3 className="font-semibold text-lg mb-2">📝 推奨記事戦略</h3>
+                      <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">{strategyRecommendations}</p>
+                    </div>
+                  )}
+                  {marketGaps.length > 0 && (
+                    <div>
+                      <h3 className="font-semibold text-lg mb-2">🎯 市場のギャップ</h3>
+                      <ul className="space-y-2">
+                        {marketGaps.map((gap: any, index: number) => (
+                          <li key={index} className="p-3 bg-white rounded border border-gray-200">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="font-semibold">{gap.keyword}</span>
+                              <span className={`px-2 py-1 rounded text-xs ${
+                                gap.potential_impact === 'high' ? 'bg-red-100 text-red-800' :
+                                gap.potential_impact === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                                'bg-gray-100 text-gray-800'
+                              }`}>
+                                影響度: {gap.potential_impact === 'high' ? '高' : gap.potential_impact === 'medium' ? '中' : '低'}
+                              </span>
+                            </div>
+                            <p className="text-sm text-gray-600">{gap.gap_description}</p>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+          </div>
+        </div>
+      )}
 
       {/* 急上昇トレンド */}
       {stats?.topTrends && stats.topTrends.length > 0 && (

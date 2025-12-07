@@ -74,6 +74,30 @@ export async function GET(request: NextRequest) {
       .sort((a: any, b: any) => (b.growth_rate || 0) - (a.growth_rate || 0))
       .slice(0, 5);
 
+    // AI分析結果（これから狙うべきキーワード）
+    const aiRecommendedKeywords = (recentTrends || [])
+      .filter((t: any) => t.trend_type === 'ai_recommended_keyword')
+      .sort((a: any, b: any) => {
+        try {
+          const metadataA = JSON.parse(a.metadata || '{}');
+          const metadataB = JSON.parse(b.metadata || '{}');
+          return (metadataB.opportunity_score || 0) - (metadataA.opportunity_score || 0);
+        } catch {
+          return 0;
+        }
+      })
+      .slice(0, 10);
+
+    // AI分析結果（記事戦略）
+    const aiStrategy = (recentTrends || [])
+      .filter((t: any) => t.trend_type === 'ai_strategy')
+      .sort((a: any, b: any) => {
+        const dateA = new Date(a.created_at || 0).getTime();
+        const dateB = new Date(b.created_at || 0).getTime();
+        return dateB - dateA;
+      })
+      .slice(0, 1)[0];
+
     // 過去記事のパフォーマンス（人気記事トップ5）
     const { data: popularPosts } = db
       .from('blog_posts')
@@ -98,6 +122,8 @@ export async function GET(request: NextRequest) {
         },
         topTrends: topTrends,
         topPosts: topPosts,
+        aiRecommendedKeywords: aiRecommendedKeywords,
+        aiStrategy: aiStrategy,
       },
     });
   } catch (error) {
