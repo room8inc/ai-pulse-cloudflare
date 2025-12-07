@@ -91,6 +91,61 @@ export async function GET(request: NextRequest) {
       .sort((a: any, b: any) => (b.page_views || 0) - (a.page_views || 0))
       .slice(0, 10);
 
+    // AI分析結果を取得（これから狙うべきキーワード、記事戦略、市場のギャップ）
+    const { data: aiRecommendedKeywords } = supabase
+      .from('trends')
+      .select('*')
+      .eq('trend_type', 'ai_recommended_keyword')
+      .gte('created_at', sevenDaysAgoStart)
+      .all();
+
+    const { data: aiStrategy } = supabase
+      .from('trends')
+      .select('*')
+      .eq('trend_type', 'ai_strategy')
+      .gte('created_at', sevenDaysAgoStart)
+      .all();
+
+    // AI分析結果を整理
+    const aiAnalysis = {
+      recommendedKeywords: (aiRecommendedKeywords || [])
+        .map((k: any) => {
+          try {
+            const metadata = JSON.parse(k.metadata || '{}');
+            return {
+              keyword: k.keyword,
+              reason: metadata.reason || '',
+              opportunity_score: metadata.opportunity_score || 0,
+              competition_level: metadata.competition_level || 'medium',
+              suggested_article_type: metadata.suggested_article_type || '',
+            };
+          } catch {
+            return null;
+          }
+        })
+        .filter((k: any) => k !== null)
+        .sort((a: any, b: any) => (b.opportunity_score || 0) - (a.opportunity_score || 0))
+        .slice(0, 10),
+      strategy: (aiStrategy || [])
+        .map((s: any) => {
+          try {
+            const metadata = JSON.parse(s.metadata || '{}');
+            return {
+              strategy_recommendations: metadata.strategy_recommendations || '',
+              market_gaps: metadata.market_gaps || [],
+            };
+          } catch {
+            return null;
+          }
+        })
+        .filter((s: any) => s !== null)
+        .sort((a: any, b: any) => {
+          const dateA = new Date(a.created_at || 0).getTime();
+          const dateB = new Date(b.created_at || 0).getTime();
+          return dateB - dateA;
+        })[0] || null,
+    };
+
     // LLMでサマリーを生成
     const { summary, blogIdeas } = await generateSummary({
       official: official || [],
@@ -98,6 +153,7 @@ export async function GET(request: NextRequest) {
       trends: trends || [],
       searchQueries: topQueries,
       popularPosts: topPosts,
+      aiAnalysis: aiAnalysis,
     });
 
     // ブログ候補をDBに登録
