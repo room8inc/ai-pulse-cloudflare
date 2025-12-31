@@ -1,27 +1,39 @@
-import Database from 'better-sqlite3';
-import path from 'path';
-import fs from 'fs';
+/**
+ * Cloudflare D1データベースクライアント
+ * Supabase互換APIを提供
+ */
+
+// Cloudflare Workers/Pages環境でのD1バインディング型定義
+interface Env {
+  DB: D1Database;
+}
+
+// グローバルなEnv型（Cloudflare Pages環境）
+declare global {
+  namespace NodeJS {
+    interface ProcessEnv {
+      DB?: D1Database;
+    }
+  }
+}
 
 /**
- * SQLiteデータベースクライアント
- * Supabaseの代わりに使用（個人利用・無料）
+ * D1データベースクライアント
+ * Supabase互換のAPIを提供
  */
 class DBClient {
-  private db: Database.Database;
+  private db: D1Database;
 
-  constructor() {
-    // データベースファイルのパス
-    const dbPath = path.join(process.cwd(), 'data', 'ai-pulse.db');
-    
-    // dataディレクトリが存在しない場合は作成
-    const dataDir = path.dirname(dbPath);
-    if (!fs.existsSync(dataDir)) {
-      fs.mkdirSync(dataDir, { recursive: true });
+  constructor(db?: D1Database) {
+    // Cloudflare Pages環境では、request.envから取得
+    // ローカル開発時は引数から取得
+    if (typeof db !== 'undefined') {
+      this.db = db;
+    } else if (typeof process !== 'undefined' && process.env?.DB) {
+      this.db = process.env.DB as any;
+    } else {
+      throw new Error('D1 database binding not found. Make sure DB is configured in wrangler.toml');
     }
-
-    // データベース接続
-    this.db = new Database(dbPath);
-    this.db.pragma('journal_mode = WAL'); // パフォーマンス向上
   }
 
   /**
@@ -60,44 +72,52 @@ class DBClient {
             values.push(value);
             return queryBuilder;
           },
-          single: () => {
+          single: async () => {
             if (conditions.length > 0) {
               query += ' WHERE ' + conditions.join(' AND ');
             }
             query += ' LIMIT 1';
-            const result = this.db.prepare(query).get(...values);
-            return { data: result || null, error: null };
+            try {
+              const result = await this.db.prepare(query).bind(...values).first();
+              return { data: result || null, error: null };
+            } catch (error) {
+              return { data: null, error };
+            }
           },
-          all: () => {
+          all: async () => {
             if (conditions.length > 0) {
               query += ' WHERE ' + conditions.join(' AND ');
             }
-            const results = this.db.prepare(query).all(...values);
-            return { data: results, error: null };
+            try {
+              const results = await this.db.prepare(query).bind(...values).all();
+              return { data: results.results || [], error: null };
+            } catch (error) {
+              return { data: null, error };
+            }
           },
         };
 
         return queryBuilder;
       },
-      insert: (data: any) => {
+      insert: async (data: any) => {
         try {
           const columns = Object.keys(data).join(', ');
           const placeholders = Object.keys(data).map(() => '?').join(', ');
           const values = Object.values(data);
           const query = `INSERT INTO ${table} (${columns}) VALUES (${placeholders})`;
-          const result = this.db.prepare(query).run(...values);
-          return { data: { id: result.lastInsertRowid }, error: null };
+          const result = await this.db.prepare(query).bind(...values).run();
+          return { data: { id: result.meta.last_row_id?.toString() }, error: null };
         } catch (error) {
           return { data: null, error };
         }
       },
       update: (data: any) => ({
-        eq: (column: string, value: any) => {
+        eq: async (column: string, value: any) => {
           try {
             const setClause = Object.keys(data).map(key => `${key} = ?`).join(', ');
             const values = [...Object.values(data), value];
             const query = `UPDATE ${table} SET ${setClause} WHERE ${column} = ?`;
-            this.db.prepare(query).run(...values);
+            await this.db.prepare(query).bind(...values).run();
             return { data: null, error: null };
           } catch (error) {
             return { data: null, error };
@@ -105,24 +125,24 @@ class DBClient {
         },
       }),
       delete: () => ({
-        eq: (column: string, value: any) => {
+        eq: async (column: string, value: any) => {
           try {
             const query = `DELETE FROM ${table} WHERE ${column} = ?`;
-            this.db.prepare(query).run(value);
+            await this.db.prepare(query).bind(value).run();
             return { error: null };
           } catch (error) {
             return { error };
           }
         },
-        neq: (column: string, value: any) => {
+        neq: async (column: string, value: any) => {
           try {
             // neq('id', '') で全削除を実現
             if (column === 'id' && value === '') {
               const query = `DELETE FROM ${table}`;
-              this.db.prepare(query).run();
+              await this.db.prepare(query).run();
             } else {
               const query = `DELETE FROM ${table} WHERE ${column} != ?`;
-              this.db.prepare(query).run(value);
+              await this.db.prepare(query).bind(value).run();
             }
             return { error: null };
           } catch (error) {
@@ -136,36 +156,55 @@ class DBClient {
   /**
    * 生のSQLクエリを実行
    */
-  exec(sql: string) {
-    this.db.exec(sql);
+  async exec(sql: string) {
+    await this.db.exec(sql);
   }
 
   /**
-   * データベース接続を閉じる
+   * データベース接続を閉じる（D1では不要だが互換性のため）
    */
   close() {
-    this.db.close();
+    // D1は接続管理が不要
   }
 }
 
-// シングルトンインスタンス
+// シングルトンインスタンス（Cloudflare Pages環境用）
 let dbInstance: DBClient | null = null;
 
 /**
  * データベースクライアントを取得
- * Supabaseの createSupabaseClient() の代わりに使用
+ * Cloudflare Pages環境では、request.envから取得
+ * 
+ * @param env Cloudflare Pages環境のenvオブジェクト（オプション）
+ * @returns DBClientインスタンス
  */
-export function createSupabaseClient() {
+export function createSupabaseClient(env?: { DB?: D1Database } | any) {
+  // Cloudflare Pages環境: envから取得
+  if (env?.DB) {
+    return new DBClient(env.DB);
+  }
+  
+  // @cloudflare/next-on-pagesを使用している場合、request.envから取得
+  // ただし、Next.js App Routerでは標準的な方法がないため、
+  // グローバル変数やprocess.envから取得を試みる
+  if (typeof globalThis !== 'undefined' && (globalThis as any).__CF_PAGES_ENV__?.DB) {
+    return new DBClient((globalThis as any).__CF_PAGES_ENV__.DB);
+  }
+  
+  // ローカル開発環境: process.envから取得を試みる
+  // または、wrangler pages devで実行している場合
+  if (typeof process !== 'undefined' && process.env?.DB) {
+    return new DBClient(process.env.DB as any);
+  }
+  
+  // シングルトンインスタンス（フォールバック）
   if (!dbInstance) {
-    dbInstance = new DBClient();
-    // 初回接続時にスキーマを確認（テーブルが存在しない場合は警告）
-    try {
-      dbInstance.from('raw_events').select('id').all();
-    } catch (error) {
-      console.warn(
-        'Database tables may not be initialized. Please run /api/init-db first.'
-      );
-    }
+    // 警告を出して、envが設定されていないことを通知
+    console.warn(
+      'D1 database binding not found. Make sure DB is configured in wrangler.toml and passed to createSupabaseClient().'
+    );
+    // 開発環境では、エラーを投げずに続行（後でエラーが発生する）
+    throw new Error('D1 database binding not found. Please configure DB in wrangler.toml');
   }
   return dbInstance;
 }

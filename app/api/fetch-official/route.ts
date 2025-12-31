@@ -15,7 +15,9 @@ import { fetchRSSFeed } from '@/utils/rss-parser';
  * - Microsoft AI Blog
  */
 export async function GET(request: NextRequest) {
-  const supabase = createSupabaseClient();
+  // Cloudflare Pages環境では、envからD1データベースを取得
+  const env = (request as any).env || (globalThis as any).__CF_PAGES_ENV__;
+  const supabase = createSupabaseClient(env);
   const results = {
     success: 0,
     failed: 0,
@@ -43,7 +45,7 @@ export async function GET(request: NextRequest) {
         for (const item of items) {
           // 重複チェック（URLが既に存在するか）
           if (item.link) {
-            const { data: existing } = supabase
+            const { data: existing } = await supabase
               .from('raw_events')
               .select('id')
               .eq('url', item.link)
@@ -140,7 +142,7 @@ export async function GET(request: NextRequest) {
           }
 
           // raw_eventsテーブルに挿入
-          const { error: insertError } = supabase
+          const { error: insertError } = await supabase
             .from('raw_events')
             .insert({
               source: feed.source,
@@ -176,7 +178,7 @@ export async function GET(request: NextRequest) {
     }
 
     // ログを記録
-    supabase.from('logs').insert({
+    await supabase.from('logs').insert({
       level: results.failed > 0 ? 'warning' : 'info',
       endpoint: '/api/fetch-official',
       message: `Fetched ${results.success} items, ${results.failed} failed`,
@@ -202,7 +204,7 @@ export async function GET(request: NextRequest) {
     console.error('Error in fetch-official:', error);
 
     // エラーログを記録
-    supabase.from('logs').insert({
+    await supabase.from('logs').insert({
       level: 'error',
       endpoint: '/api/fetch-official',
       message: error instanceof Error ? error.message : 'Unknown error',

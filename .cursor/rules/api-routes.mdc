@@ -13,13 +13,15 @@ API ルートを実装する際は、以下のパターンに従うこと。
 
 ```typescript
 import { NextRequest, NextResponse } from 'next/server';
-import { createSupabaseClient } from '@/lib/supabase';
+import { createSupabaseClient } from '@/lib/db';
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createSupabaseClient();
+    // Cloudflare Pages環境では、envからD1データベースを取得
+    const env = (request as any).env || (globalThis as any).__CF_PAGES_ENV__;
+    const db = createSupabaseClient(env);
     
-    // 処理を実装
+    // 処理を実装（すべてのDB操作は非同期）
     const result = await someOperation();
     
     return NextResponse.json({ 
@@ -29,13 +31,13 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Error:', error);
     
-    // エラーログをSupabaseに記録
-    const supabase = createSupabaseClient();
-    await supabase.from('logs').insert({
+    // エラーログをD1に記録（非同期）
+    const env = (request as any).env || (globalThis as any).__CF_PAGES_ENV__;
+    const db = createSupabaseClient(env);
+    await db.from('logs').insert({
       level: 'error',
       message: error instanceof Error ? error.message : 'Unknown error',
       endpoint: '/api/your-endpoint',
-      created_at: new Date().toISOString()
     });
     
     return NextResponse.json({ 
@@ -72,27 +74,30 @@ const fetchWithRetry = async (url: string, options: RequestInit, maxRetries = 3)
 
 ## データベース操作パターン
 
-```typescript
-const supabase = createSupabaseClient();
+// Cloudflare Pages環境では、envからD1データベースを取得
+const env = (request as any).env || (globalThis as any).__CF_PAGES_ENV__;
+const db = createSupabaseClient(env);
 
-// 挿入
-const { data, error } = await supabase
+// 挿入（非同期）
+const { data, error } = await db
   .from('table_name')
-  .insert({ column: 'value' })
-  .select();
+  .insert({ column: 'value' });
 
 if (error) throw error;
 
-// 更新
-const { data, error } = await supabase
+// 更新（非同期）
+const { error } = await db
   .from('table_name')
   .update({ column: 'new_value' })
-  .eq('id', id)
-  .select();
+  .eq('id', id);
 
-// 削除
-const { error } = await supabase
+if (error) throw error;
+
+// 削除（非同期）
+const { error } = await db
   .from('table_name')
   .delete()
   .eq('id', id);
+
+if (error) throw error;
 ```

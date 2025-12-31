@@ -1,8 +1,14 @@
-# セットアップガイド（SQLite版）
+# セットアップガイド（Cloudflare Pages + D1版）
 
 ## 概要
 
-このプロジェクトは**完全無料**で動作します。SQLiteを使用しているため、外部サービスは不要です。
+このプロジェクトは**Cloudflare Pages + D1 + R2**で動作します。無料プランで利用可能です。
+
+**注意**: このドキュメントは古いSQLite版のものです。Cloudflare Pages版のセットアップについては以下を参照してください：
+- [SETUP_STEPS.md](./SETUP_STEPS.md) - グローバルインストール後の手順
+- [SETUP_INSTRUCTIONS.md](./SETUP_INSTRUCTIONS.md) - 自動化スクリプト付き手順
+- [CLOUDFLARE_SETUP.md](./CLOUDFLARE_SETUP.md) - 詳細なセットアップ手順
+- [DEPLOYMENT.md](./DEPLOYMENT.md) - GitHub連携とデプロイ手順
 
 ## 1. 依存関係のインストール
 

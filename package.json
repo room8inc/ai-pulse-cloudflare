@@ -4,15 +4,29 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:cf": "npx @cloudflare/next-on-pages@latest dev",
     "build": "next build",
+    "build:cf": "npx @cloudflare/next-on-pages@latest build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "cf:deploy": "npm run build:cf && npx wrangler pages deploy .vercel/output/static --project-name=ai-pulse",
+    "cf:project:create": "npx wrangler pages project create ai-pulse",
+    "cf:project:list": "npx wrangler pages project list",
+    "cf:deployments:list": "npx wrangler pages deployment list --project-name=ai-pulse",
+    "cf:migrate": "npx wrangler d1 migrations apply ai-pulse-db",
+    "cf:migrate:local": "npx wrangler d1 migrations apply ai-pulse-db --local",
+    "cf:d1:create": "npx wrangler d1 create ai-pulse-db",
+    "cf:d1:list": "npx wrangler d1 list",
+    "cf:login": "npx wrangler login",
+    "cf:setup": "bash scripts/setup-cloudflare.sh",
+    "git:push": "bash scripts/push-to-github.sh"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.20.0",
+    "@cloudflare/next-on-pages": "^1.12.3",
+    "@cloudflare/workers-types": "^4.20240222.0",
     "@google-analytics/data": "^5.2.1",
     "@google/generative-ai": "^0.2.1",
-    "better-sqlite3": "^11.3.0",
     "cheerio": "^1.0.0-rc.12",
     "googleapis": "^167.0.0",
     "next": "14.2.5",
@@ -22,7 +36,6 @@
     "rss-parser": "^3.13.0"
   },
   "devDependencies": {
-    "@types/better-sqlite3": "^7.6.11",
     "@types/node": "^20.11.24",
     "@types/react": "^18.2.61",
     "@types/react-dom": "^18.2.19",
@@ -31,6 +44,7 @@
     "eslint-config-next": "14.2.5",
     "postcss": "^8.4.35",
     "tailwindcss": "^3.4.1",
-    "typescript": "^5.3.3"
+    "typescript": "^5.3.3",
+    "wrangler": "^3.0.0"
   }
 }

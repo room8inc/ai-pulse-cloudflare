@@ -5,7 +5,7 @@ alwaysApply: true
 
 # AI News Aggregator プロジェクト - 開発原則
 
-このプロジェクトは Next.js 14 (App Router) + SQLite を使用した AI ニュースアグリゲーターです。
+このプロジェクトは Next.js 14 (App Router) + Cloudflare Pages + D1 を使用した AI ニュースアグリゲーターです。
 Cursor での開発効率を最大化するための行動指針を定義します。
 
 ## 開発原則
@@ -25,13 +25,15 @@ Cursor での開発効率を最大化するための行動指針を定義しま�
 - 各 API ルートは独立して動作可能にする
 - エラーハンドリングを必ず実装
 - レスポンスは統一された形式で返す
-- ログ出力を適切に行う（SQLite の `logs` テーブルに記録）
+- ログ出力を適切に行う（D1 の `logs` テーブルに記録）
+- Cloudflare Pages環境では、`request.env`からD1データベースを取得
 
-### 4. SQLite との連携
+### 4. Cloudflare D1 との連携
 - データベース操作は `lib/db.ts` の `createSupabaseClient()` を使用（Supabase互換API）
-- SQLiteはローカルファイル（`data/ai-pulse.db`）に保存
-- 環境変数不要（完全無料・ローカル完結）
-- トランザクションが必要な場合は適切に処理
+- Cloudflare D1はSQLiteベースのサーバーレスデータベース
+- すべてのデータベース操作は非同期（`await`が必要）
+- マイグレーションは `wrangler d1 migrations apply` コマンドで実行
+- ローカル開発時は `wrangler pages dev` を使用
 
 ### 5. 外部 API の呼び出し
 - レート制限を考慮した実装
@@ -52,9 +54,10 @@ Cursor での開発効率を最大化するための行動指針を定義しま�
 
 ### 8. エラーハンドリング
 - try-catch ブロックでエラーを捕捉
-- エラーログを SQLite の `logs` テーブルに記録
+- エラーログを D1 の `logs` テーブルに記録（非同期操作）
 - ユーザー向けエラーメッセージは分かりやすく
 - 開発環境では詳細なエラー情報を表示
+- D1データベースのbindingが設定されていない場合のエラーハンドリング
 
 ### 9. パフォーマンス
 - 大量データの取得時はページネーションを実装
@@ -90,24 +93,36 @@ export async function GET(request: NextRequest) {
 
 ### データベース操作のパターン
 ```typescript
+import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseClient } from '@/lib/db';
 
-const db = createSupabaseClient();
+export async function GET(request: NextRequest) {
+  try {
+    // Cloudflare Pages環境では、envからD1データベースを取得
+    const env = (request as any).env || (globalThis as any).__CF_PAGES_ENV__;
+    const db = createSupabaseClient(env);
 
-// 挿入
-const { data, error } = db.from('table_name').insert({
-  column: 'value'
-});
+    // 挿入（非同期）
+    const { data, error } = await db.from('table_name').insert({
+      column: 'value'
+    });
 
-if (error) throw error;
+    if (error) throw error;
 
-// 取得
-const { data, error } = db.from('table_name')
-  .select('*')
-  .eq('column', 'value')
-  .all();
+    // 取得（非同期）
+    const { data, error } = await db.from('table_name')
+      .select('*')
+      .eq('column', 'value')
+      .all();
 
-if (error) throw error;
+    if (error) throw error;
+
+    return NextResponse.json({ success: true, data });
+  } catch (error) {
+    console.error('Error:', error);
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  }
+}
 ```
 
 ### 外部 API 呼び出しのパターン
@@ -130,16 +145,21 @@ const calculateTrend = async (days: number = 7) => {
   const pastDate = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
   
   // 現在の期間と過去の期間のデータを取得
-  const { data: current } = await supabase
-    .from('raw_events')
-    .select('*')
-    .gte('created_at', pastDate.toISOString());
+  const env = (request as any).env || (globalThis as any).__CF_PAGES_ENV__;
+  const db = createSupabaseClient(env);
   
-  const { data: previous } = await supabase
+  const { data: current } = await db
     .from('raw_events')
     .select('*')
     .gte('created_at', pastDate.toISOString())
-    .lt('created_at', pastDate.toISOString());
+    .all();
+  
+  const { data: previous } = await db
+    .from('raw_events')
+    .select('*')
+    .gte('created_at', pastDate.toISOString())
+    .lt('created_at', pastDate.toISOString())
+    .all();
   
   // 増加率を計算
   const growthRate = ((current.length - previous.length) / previous.length) * 100;
@@ -231,5 +251,7 @@ const calculateTrend = async (days: number = 7) => {
 ## 参考情報
 
 - Next.js 14 App Router: https://nextjs.org/docs/app
-- SQLite (better-sqlite3): https://github.com/WiseLibs/better-sqlite3
+- Cloudflare Pages: https://developers.cloudflare.com/pages/
+- Cloudflare D1: https://developers.cloudflare.com/d1/
+- @cloudflare/next-on-pages: https://github.com/cloudflare/next-on-pages
 - TypeScript: https://www.typescriptlang.org/docs/

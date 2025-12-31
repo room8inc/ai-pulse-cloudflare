@@ -1,5 +1,5 @@
--- AI Pulse Database Schema (SQLite版)
--- 初期スキーマ定義
+-- AI Pulse Database Schema (D1版)
+-- Cloudflare D1用の初期スキーマ定義
 
 -- raw_events: 各クローラーの生データ
 CREATE TABLE IF NOT EXISTS raw_events (

@@ -319,6 +319,21 @@
 - 古いデータの自動削除（必要に応じて）
 - データの信頼性を考慮（公式情報を優先）
 
+## 技術スタック
+
+- **Next.js 14 / App Router**
+- **Cloudflare Pages** - ホスティング
+- **Cloudflare D1** - SQLiteベースのサーバーレスデータベース
+- **Cloudflare R2** - オブジェクトストレージ（オプション）
+- **@cloudflare/next-on-pages** - Next.jsをCloudflare Pagesで動作させる
+
+## データベース
+
+- **Cloudflare D1**: SQLiteベースのサーバーレスデータベース
+- **マイグレーション**: `migrations/0001_initial_schema.sql`
+- **初期化**: `wrangler d1 migrations apply ai-pulse-db`
+- **すべてのデータベース操作は非同期**（`await`が必要）
+
 ## 目標
 
 **「毎日、ブログネタが降ってくる状態をつくる」**

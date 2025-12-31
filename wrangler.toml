@@ -1,0 +1,24 @@
+name = "ai-pulse"
+compatibility_date = "2024-01-01"
+pages_build_output_dir = ".vercel/output/static"
+
+[env.production]
+name = "ai-pulse"
+
+# D1データベース設定
+[[d1_databases]]
+binding = "DB"
+database_name = "ai-pulse-db"
+database_id = "36e92b98-b558-4f5b-a161-ed4ddbb5702"
+# マイグレーションディレクトリ
+migrations_dir = "./migrations"
+
+# R2ストレージ設定（必要に応じて）
+# [[r2_buckets]]
+# binding = "STORAGE"
+# bucket_name = "ai-pulse-storage"
+
+# 環境変数（Cloudflareダッシュボードで設定）
+# [vars]
+# ENVIRONMENT = "production"
+

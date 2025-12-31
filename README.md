@@ -13,7 +13,7 @@ Cursor での開発を前提に、以下の構成で設計されています。
 ## ■ 全体構成
 
 ```text
-Next.js (App Router)
+Next.js (App Router) + Cloudflare Pages
 
  ├─ /api/
 
@@ -51,7 +51,7 @@ Next.js (App Router)
 
  │
 
-SQLite (ローカルデータベース)
+Cloudflare D1 (SQLiteベース・サーバーレス)
 
  ├─ raw_events             ← 各クローラーの生データ
 
@@ -152,9 +152,13 @@ SQLite (ローカルデータベース)
 
 - **Next.js 14 / App Router**
 
-- **SQLite** (better-sqlite3) - 完全無料・ローカル完結
+- **Cloudflare Pages** - ホスティング
 
-- **Vercel Cron**
+- **Cloudflare D1** - SQLiteベースのデータベース（完全無料・サーバーレス）
+
+- **Cloudflare R2** - オブジェクトストレージ（オプション）
+
+- **@cloudflare/next-on-pages** - Next.jsをCloudflare Pagesで動作させる
 
 - **Node-fetch / Cheerio / RSS parser**
 
@@ -166,16 +170,31 @@ SQLite (ローカルデータベース)
 
 - **Google Search Console API**
 
+> **注意**: このプロジェクトはCloudflare Pages + D1 + R2で動作するように移行されました。  
+> ローカル開発時は`better-sqlite3`を使用していた構成から、Cloudflare D1を使用する構成に変更されています。  
+> 詳細は [CLOUDFLARE_SETUP.md](./CLOUDFLARE_SETUP.md) と [MIGRATION_GUIDE.md](./MIGRATION_GUIDE.md) を参照してください。
+
 ---
 
 ## ■ クイックスタート
 
 ### 1. システムを起動する
 
+#### ローカル開発（Cloudflare Pages環境）
+
+```bash
+npm install
+npm run dev:cf
+```
+
+#### 通常のNext.js開発（データベースは使用不可）
+
 ```bash
 npm install
 npm run dev
 ```
+
+**注意**: データベースを使用する機能は、Cloudflare Pages環境（`npm run dev:cf`）でしか動作しません。
 
 ブラウザで `http://localhost:3000/dashboard` にアクセスすると、ダッシュボードが表示されます。
 
@@ -204,34 +223,72 @@ curl http://localhost:3000/api/summarize-today
 
 ## ■ セットアップ
 
-### 1. 環境変数
+### GitHubからCloudflare Pagesにデプロイ
+
+**最短手順**: [QUICK_START.md](./QUICK_START.md) を参照してください。
+
+**詳細手順**: [DEPLOYMENT.md](./DEPLOYMENT.md) を参照してください。
+
+**CLIでの手順**: [CLI_DEPLOYMENT.md](./CLI_DEPLOYMENT.md) を参照してください。
+
+**セットアップ手順（自動化スクリプト付き）**: [SETUP_INSTRUCTIONS.md](./SETUP_INSTRUCTIONS.md) を参照してください。
+
+**グローバルインストール後の手順**: [SETUP_STEPS.md](./SETUP_STEPS.md) を参照してください。
+
+### Cloudflare Pages + D1 + R2でのセットアップ
+
+詳細なセットアップ手順は [CLOUDFLARE_SETUP.md](./CLOUDFLARE_SETUP.md) を参照してください。
+
+#### 1. Cloudflare D1データベースの作成
 
 ```bash
-# SQLiteは環境変数不要（完全無料・ローカル完結）
+wrangler d1 create ai-pulse-db
+```
 
-# AI APIs（後で設定）
+#### 2. マイグレーションの実行
+
+```bash
+# ローカル環境でテスト
+npm run cf:migrate:local
+
+# 本番環境に適用
+npm run cf:migrate
+```
+
+#### 3. 環境変数の設定
+
+Cloudflare Pagesダッシュボードで以下の環境変数を設定：
+
+```bash
 OPENAI_API_KEY=
 ANTHROPIC_API_KEY=
 GEMINI_API_KEY=
 TWITTER_BEARER_TOKEN=
 GOOGLE_CUSTOM_SEARCH_KEY=
 GOOGLE_CSE_ID=
-
-# Google Analytics / Search Console
 GOOGLE_ANALYTICS_PROPERTY_ID=
 GOOGLE_ANALYTICS_CREDENTIALS=
 GOOGLE_SEARCH_CONSOLE_SITE_URL=
 GOOGLE_SEARCH_CONSOLE_CREDENTIALS=
 ```
 
-### 2. ローカル実行
+#### 4. ビルドとデプロイ
+
+```bash
+npm run build:cf
+npm run cf:deploy
+```
+
+### ローカル開発
 
 ```bash
 npm install
-npm run dev
+npm run dev:cf  # Cloudflare Pages環境でローカル開発
 ```
 
-### 3. Cron設定
+### Cron設定（Cloudflare Pages）
+
+Cloudflare Pagesでは、Cron Triggersを使用して定期実行を設定します。
 
 - `/api/fetch-official` → 毎時
 
