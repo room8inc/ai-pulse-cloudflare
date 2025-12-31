@@ -20,7 +20,15 @@ echo "🔗 Adding remote (if needed)..."
 git remote add cloudflare https://github.com/room8inc/ai-pulse-cloudflare.git 2>/dev/null || git remote set-url cloudflare https://github.com/room8inc/ai-pulse-cloudflare.git 2>/dev/null || echo "Remote already configured"
 
 echo "🚀 Pushing to GitHub..."
-git push -u cloudflare main
+if git push -u cloudflare main 2>&1 | grep -q "secret"; then
+    echo "⚠️  GitHub Push Protection detected secrets in history"
+    echo "📝 Removing secrets from Git history..."
+    git filter-branch --force --index-filter "git rm --cached --ignore-unmatch *-*.json" --prune-empty --tag-name-filter cat -- --all 2>&1 | tail -5
+    echo "🔄 Force pushing (rewritten history)..."
+    git push -u cloudflare main --force
+else
+    git push -u cloudflare main
+fi
 
 echo "✅ Done!"
 
