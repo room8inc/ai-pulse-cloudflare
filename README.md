@@ -98,24 +98,19 @@ Cloudflare D1 (SQLiteベース・サーバーレス)
 
 - GitHub Issues
 
-### 3. **一般ユーザーの声（感情データ）**
+### 3. **一般ユーザーの声（感情データ・トレンド）**
 
-- X（Twitter）投稿
-
-- YouTubeタイトル（レビュー系）
-
-- 個人ブログ（Google Custom Search）
+- **YouTubeトレンド**: AI関連動画の急上昇ランキング
+- **Yahoo!リアルタイム検索**: 日本国内のリアルタイムトレンド
+- **技術コミュニティ**: HackerNews, Reddit, HuggingFace
 
 ### 4. **トレンド分析**
 
+- **YouTube/Yahooトレンド**: 動画と検索の急上昇ワード
 - 過去N日間との比較（言及数の増加率）
-
 - 急上昇キーワードの検出
-
 - 感情の変化トレンド（ポジティブ/ネガティブの推移）
-
 - Arenaスコアの変動トレンド
-
 - 複数ソースでの同時言及（トレンドの確度向上）
 
 - モデル別の注目度推移
@@ -262,10 +257,9 @@ Cloudflare Pagesダッシュボードで以下の環境変数を設定：
 ```bash
 OPENAI_API_KEY=
 ANTHROPIC_API_KEY=
-GEMINI_API_KEY=
-TWITTER_BEARER_TOKEN=
-GOOGLE_CUSTOM_SEARCH_KEY=
-GOOGLE_CSE_ID=
+GEMINI_API_KEY_FREE=
+GEMINI_API_KEY_PAID=
+YOUTUBE_API_KEY=
 GOOGLE_ANALYTICS_PROPERTY_ID=
 GOOGLE_ANALYTICS_CREDENTIALS=
 GOOGLE_SEARCH_CONSOLE_SITE_URL=
@@ -314,7 +308,8 @@ Cloudflare Pagesでは、Cron Triggersを使用して定期実行を設定しま
 |---------|------|
 | `/api/fetch-official` | 公式情報（RSS/API）取得 |
 | `/api/fetch-community` | Reddit/HN/HFの反応取得 |
-| `/api/fetch-twitter` | X投稿の取得 |
+| `/api/fetch-youtube` | YouTubeトレンド取得 |
+| `/api/fetch-yahoo` | Yahoo!リアルタイム検索取得 |
 | `/api/fetch-arena` | Arena スコア取得 |
 | `/api/analyze-trends` | トレンド分析（急上昇・感情変化・言及数推移） |
 | `/api/fetch-ga-data` | Google Analyticsデータ取得 |
@@ -331,7 +326,7 @@ Cloudflare Pagesでは、Cron Triggersを使用して定期実行を設定しま
 
 - モデル別アップデート
 
-- Reddit/HN/Twitterの感情傾向
+- **YouTube/Yahooのトレンド**
 
 - トレンド可視化（急上昇キーワード、言及数推移グラフ、感情変化）
 
