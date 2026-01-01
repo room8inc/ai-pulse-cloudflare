@@ -56,7 +56,7 @@ export async function GET(request: NextRequest) {
       throw new Error(`YouTube API Error: ${response.status} - ${JSON.stringify(errorData)}`);
     }
 
-    const data = await response.json();
+    const data = (await response.json()) as { items?: any[] };
     const items = data.items || [];
     results.total = items.length;
 
