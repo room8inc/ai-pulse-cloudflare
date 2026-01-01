@@ -15,7 +15,8 @@ import { analyzeTrendsWithAI } from '@/utils/trend-ai-analyzer';
  * Cron: 6時間ごと実行
  */
 export async function GET(request: NextRequest) {
-  const supabase = createSupabaseClient();
+  const env = (request as any).env || (globalThis as any).__CF_PAGES_ENV__;
+  const supabase = createSupabaseClient(env);
 
   try {
     const now = new Date();

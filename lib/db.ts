@@ -81,7 +81,7 @@ class DBClient {
             query += ' LIMIT 1';
             try {
               const result = await this.db.prepare(query).bind(...values).first();
-              return { data: result || null, error: null };
+            return { data: result || null, error: null };
             } catch (error) {
               return { data: null, error };
             }
@@ -202,9 +202,9 @@ export function createSupabaseClient(env?: { DB?: D1Database } | any) {
   // シングルトンインスタンス（フォールバック）
   if (!dbInstance) {
     // 警告を出して、envが設定されていないことを通知
-    console.warn(
+      console.warn(
       'D1 database binding not found. Make sure DB is configured in wrangler.toml and passed to createSupabaseClient().'
-    );
+      );
     // 開発環境では、エラーを投げずに続行（後でエラーが発生する）
     throw new Error('D1 database binding not found. Please configure DB in wrangler.toml');
   }

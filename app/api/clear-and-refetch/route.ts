@@ -11,7 +11,8 @@ import { createSupabaseClient } from '@/lib/db';
  * 2. 各APIを順番に実行して最新データを取得
  */
 export async function POST(request: NextRequest) {
-  const supabase = createSupabaseClient();
+  const env = (request as any).env || (globalThis as any).__CF_PAGES_ENV__;
+  const supabase = createSupabaseClient(env);
 
   try {
     const { clearAll = false } = await request.json().catch(() => ({}));
@@ -117,7 +118,8 @@ export async function POST(request: NextRequest) {
  * データをクリアするだけ（再取得しない）
  */
 export async function DELETE(request: NextRequest) {
-  const supabase = createSupabaseClient();
+  const env = (request as any).env || (globalThis as any).__CF_PAGES_ENV__;
+  const supabase = createSupabaseClient(env);
 
   try {
     const { clearAll = false } = await request.json().catch(() => ({}));

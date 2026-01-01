@@ -9,7 +9,8 @@ import { fetchArenaScores } from '@/utils/arena-fetcher';
  * Cron: 毎時実行
  */
 export async function GET(request: NextRequest) {
-  const supabase = createSupabaseClient();
+  const env = (request as any).env || (globalThis as any).__CF_PAGES_ENV__;
+  const supabase = createSupabaseClient(env);
   const results = {
     success: 0,
     failed: 0,

@@ -7,7 +7,8 @@ import { createSupabaseClient } from '@/lib/db';
  * ブログ候補をDBに登録するAPI
  */
 export async function POST(request: NextRequest) {
-  const supabase = createSupabaseClient();
+  const env = (request as any).env || (globalThis as any).__CF_PAGES_ENV__;
+  const supabase = createSupabaseClient(env);
 
   try {
     const body = await request.json();

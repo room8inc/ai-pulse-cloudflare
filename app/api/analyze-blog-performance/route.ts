@@ -15,7 +15,8 @@ import { createSupabaseClient } from '@/lib/db';
  * - トレンド予測（次に来そうなトレンドを予測）
  */
 export async function GET(request: NextRequest) {
-  const supabase = createSupabaseClient();
+  const env = (request as any).env || (globalThis as any).__CF_PAGES_ENV__;
+  const supabase = createSupabaseClient(env);
 
   try {
     // 過去記事のパフォーマンスデータを取得

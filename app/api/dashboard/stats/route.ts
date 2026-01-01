@@ -8,7 +8,9 @@ import { createSupabaseClient } from '@/lib/db';
  */
 export async function GET(request: NextRequest) {
   try {
-    const db = createSupabaseClient();
+    // Cloudflare Pages環境では、envからD1データベースを取得
+    const env = (request as any).env || (globalThis as any).__CF_PAGES_ENV__;
+    const db = createSupabaseClient(env);
 
     // 今日のデータ数
     const today = new Date();

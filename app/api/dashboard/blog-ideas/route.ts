@@ -8,7 +8,9 @@ import { createSupabaseClient } from '@/lib/db';
  */
 export async function GET(request: NextRequest) {
   try {
-    const db = createSupabaseClient();
+    // Cloudflare Pages環境では、envからD1データベースを取得
+    const env = (request as any).env || (globalThis as any).__CF_PAGES_ENV__;
+    const db = createSupabaseClient(env);
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status') || 'all';
 
@@ -144,7 +146,9 @@ export async function GET(request: NextRequest) {
  */
 export async function PATCH(request: NextRequest) {
   try {
-    const db = createSupabaseClient();
+    // Cloudflare Pages環境では、envからD1データベースを取得
+    const env = (request as any).env || (globalThis as any).__CF_PAGES_ENV__;
+    const db = createSupabaseClient(env);
     const body = await request.json();
     const { id, status } = body;
 
