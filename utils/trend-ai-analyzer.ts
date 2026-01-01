@@ -271,14 +271,22 @@ ${currentEventsText}
 
 /**
  * Gemini APIを使用してトレンド分析を実行
+ * 文章生成・処理系は Gemini 2.5 Flash (無料枠想定) を使用
  */
 export async function analyzeTrendsWithGemini(
   input: TrendAnalysisInput
 ): Promise<TrendAnalysisResult> {
   const { GoogleGenerativeAI } = await import('@google/generative-ai');
-  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
   
-  // 最新モデル: Gemini 2.5 Flash を優先
+  // 無料枠用のAPIキーを優先して使用
+  const apiKey = process.env.GEMINI_API_KEY_FREE || process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    throw new Error('GEMINI_API_KEY_FREE or GEMINI_API_KEY is not set');
+  }
+
+  const genAI = new GoogleGenerativeAI(apiKey);
+  
+  // 文章生成・処理系: Gemini 2.5 Flash を使用
   const model = genAI.getGenerativeModel({
     model: 'gemini-2.5-flash',
     generationConfig: {
@@ -392,8 +400,8 @@ ${currentEventsText}
 export async function analyzeTrendsWithAI(
   input: TrendAnalysisInput
 ): Promise<TrendAnalysisResult> {
-  // 優先順位: Gemini > OpenAI > Anthropic
-  if (process.env.GEMINI_API_KEY) {
+  // 優先順位: Gemini (処理系は2.5系推奨) > OpenAI > Anthropic
+  if (process.env.GEMINI_API_KEY_FREE || process.env.GEMINI_API_KEY) {
     try {
       return await analyzeTrendsWithGemini(input);
     } catch (error) {

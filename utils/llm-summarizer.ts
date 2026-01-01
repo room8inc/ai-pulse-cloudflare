@@ -245,7 +245,7 @@ export async function generateSummary(input: SummaryInput): Promise<{
   // 環境変数が設定されている場合は実際のLLM APIを呼び出す
   const openaiKey = process.env.OPENAI_API_KEY;
   const anthropicKey = process.env.ANTHROPIC_API_KEY;
-  const geminiKey = process.env.GEMINI_API_KEY;
+  const geminiKey = process.env.GEMINI_API_KEY_FREE || process.env.GEMINI_API_KEY;
 
   // 優先順位: OpenAI > Anthropic > Gemini > テンプレート
   if (openaiKey) {
@@ -369,14 +369,23 @@ async function generateWithAnthropic(input: SummaryInput): Promise<{
 
 /**
  * Gemini APIを使用してサマリーを生成
+ * 文章生成・処理系は Gemini 2.5 Flash (無料枠想定) を使用
  */
 async function generateWithGemini(input: SummaryInput): Promise<{
   summary: string;
   blogIdeas: BlogIdea[];
 }> {
   const { GoogleGenerativeAI } = await import('@google/generative-ai');
-  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-  // 最新モデル: Gemini 2.5 Flash を優先、利用できない場合は Gemini 3.0 Pro を試す
+  
+  // 無料枠用のAPIキーを優先して使用
+  const apiKey = process.env.GEMINI_API_KEY_FREE || process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    throw new Error('GEMINI_API_KEY_FREE or GEMINI_API_KEY is not set');
+  }
+
+  const genAI = new GoogleGenerativeAI(apiKey);
+  
+  // 文章生成・処理系: Gemini 2.5 Flash を使用
   const model = genAI.getGenerativeModel({ 
     model: 'gemini-2.5-flash',
     generationConfig: {
@@ -410,41 +419,6 @@ async function generateWithGemini(input: SummaryInput): Promise<{
     };
   } catch (error: any) {
     console.error('Error calling Gemini API:', error);
-    
-    // gemini-2.5-flash が利用できない場合は gemini-3.0-pro を試す
-    if (error?.message?.includes('model') || error?.message?.includes('not found')) {
-      try {
-        console.log('Falling back to gemini-3.0-pro');
-        const fallbackModel = genAI.getGenerativeModel({ 
-          model: 'gemini-3.0-pro',
-          generationConfig: {
-            responseMimeType: 'application/json',
-          } as any,
-        });
-        const result = await fallbackModel.generateContent(prompt);
-        const response = await result.response;
-        const text = response.text();
-        
-        let parsed;
-        try {
-          parsed = JSON.parse(text);
-        } catch (parseError) {
-          const jsonMatch = text.match(/\{[\s\S]*\}/);
-          if (!jsonMatch) {
-            throw new Error('No JSON found in response');
-          }
-          parsed = JSON.parse(jsonMatch[0]);
-        }
-        
-        return {
-          summary: parsed.summary || 'サマリーを生成できませんでした',
-          blogIdeas: parsed.blogIdeas || [],
-        };
-      } catch (fallbackError) {
-        console.error('Error calling Gemini fallback model:', fallbackError);
-        return generateTemplateSummary(input);
-      }
-    }
     
     // エラー時はテンプレートベースにフォールバック
     return generateTemplateSummary(input);
