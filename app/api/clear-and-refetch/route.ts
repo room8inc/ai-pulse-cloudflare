@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
           },
         });
 
-        const data = await response.json();
+        const data = await response.json() as { success?: boolean; message?: string };
         results.push({
           api,
           success: data.success || response.ok,
@@ -123,7 +123,8 @@ export async function DELETE(request: NextRequest) {
   const supabase = createSupabaseClient(env);
 
   try {
-    const { clearAll = false } = await request.json().catch(() => ({}));
+    const body = await request.json().catch(() => ({})) as { clearAll?: boolean };
+    const clearAll = body.clearAll || false;
 
     // クリアするテーブル
     const tablesToClear = [
