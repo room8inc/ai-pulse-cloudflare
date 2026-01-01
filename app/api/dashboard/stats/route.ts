@@ -2,14 +2,28 @@ export const runtime = "edge";
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseClient } from '@/lib/db';
+import { getRequestContext } from '@cloudflare/next-on-pages';
 
 /**
  * ダッシュボード用の統計データを取得するAPI
  */
 export async function GET(request: NextRequest) {
   try {
-    // Cloudflare Pages環境では、envからD1データベースを取得
-    const env = (request as any).env || (globalThis as any).__CF_PAGES_ENV__;
+    // Cloudflare Pages環境での正しいenv取得方法
+    let env: any = {};
+    try {
+      // @cloudflare/next-on-pages のコンテキストから取得
+      env = getRequestContext().env;
+    } catch (e) {
+      // ローカル開発用フォールバック
+      env = (request as any).env || (globalThis as any).__CF_PAGES_ENV__ || {};
+    }
+
+    // デバッグログ
+    if (!env.DB) {
+      console.error('D1 Binding "DB" not found in environment variables.');
+    }
+
     const db = createSupabaseClient(env);
 
     // 今日のデータ数
@@ -136,9 +150,9 @@ export async function GET(request: NextRequest) {
       {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
+        debug: String(error)
       },
       { status: 500 }
     );
   }
 }
-

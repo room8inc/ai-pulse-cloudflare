@@ -2,14 +2,26 @@ export const runtime = "edge";
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseClient } from '@/lib/db';
+import { getRequestContext } from '@cloudflare/next-on-pages';
 
 /**
  * ブログ候補一覧を取得するAPI
  */
 export async function GET(request: NextRequest) {
   try {
-    // Cloudflare Pages環境では、envからD1データベースを取得
-    const env = (request as any).env || (globalThis as any).__CF_PAGES_ENV__;
+    // Cloudflare Pages環境での正しいenv取得方法
+    let env: any = {};
+    try {
+      env = getRequestContext().env;
+    } catch (e) {
+      env = (request as any).env || (globalThis as any).__CF_PAGES_ENV__ || {};
+    }
+
+    if (!env.DB) {
+       console.error('D1 Binding "DB" not found in environment variables.');
+       return NextResponse.json({ success: true, data: [] });
+    }
+
     const db = createSupabaseClient(env);
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status') || 'all';
@@ -146,8 +158,22 @@ export async function GET(request: NextRequest) {
  */
 export async function PATCH(request: NextRequest) {
   try {
-    // Cloudflare Pages環境では、envからD1データベースを取得
-    const env = (request as any).env || (globalThis as any).__CF_PAGES_ENV__;
+    // Cloudflare Pages環境での正しいenv取得方法
+    let env: any = {};
+    try {
+      env = getRequestContext().env;
+    } catch (e) {
+      env = (request as any).env || (globalThis as any).__CF_PAGES_ENV__ || {};
+    }
+
+    if (!env.DB) {
+       console.error('D1 Binding "DB" not found in environment variables.');
+       return NextResponse.json(
+        { success: false, error: 'Database connection failed' },
+        { status: 500 }
+      );
+    }
+
     const db = createSupabaseClient(env);
     const body = await request.json();
     const { id, status } = body;
@@ -180,4 +206,3 @@ export async function PATCH(request: NextRequest) {
     );
   }
 }
-
