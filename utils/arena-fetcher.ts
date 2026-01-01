@@ -117,7 +117,7 @@ async function tryFetchArenaAPI(): Promise<ArenaScore[]> {
         continue; // 次のエンドポイントを試す
       }
 
-      const data = await response.json();
+      const data = await response.json() as any;
 
       // データ形式に応じてパース
       if (Array.isArray(data)) {
