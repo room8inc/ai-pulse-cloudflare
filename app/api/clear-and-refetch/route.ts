@@ -15,7 +15,8 @@ export async function POST(request: NextRequest) {
   const supabase = createSupabaseClient(env);
 
   try {
-    const { clearAll = false } = await request.json().catch(() => ({}));
+    const body = await request.json().catch(() => ({})) as { clearAll?: boolean };
+    const clearAll = body.clearAll || false;
 
     // クリアするテーブル
     const tablesToClear = [
