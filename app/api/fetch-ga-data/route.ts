@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
 
     if (!propertyId || !credentials) {
       // 認証情報が未設定の場合は、フォールバック動作として空の結果を返す
-      supabase.from('logs').insert({
+      await supabase.from('logs').insert({
         level: 'warning',
         endpoint: '/api/fetch-ga-data',
         message: 'Google Analytics credentials not configured. GA data fetching skipped.',
@@ -69,7 +69,7 @@ export async function GET(request: NextRequest) {
       };
 
       // 既存の記事を検索（URLで）
-      const { data: existing } = supabase
+      const { data: existing } = await supabase
         .from('blog_posts')
         .select('id')
         .eq('url', post.url)
@@ -92,7 +92,7 @@ export async function GET(request: NextRequest) {
         }
       } else {
         // 新規の場合は挿入
-        const { error } = supabase.from('blog_posts').insert({
+        const { error } = await supabase.from('blog_posts').insert({
           id: generateId(),
           title: post.title,
           url: post.url,
@@ -114,7 +114,7 @@ export async function GET(request: NextRequest) {
     };
 
     // ログを記録
-    supabase.from('logs').insert({
+    await supabase.from('logs').insert({
       level: 'info',
       endpoint: '/api/fetch-ga-data',
       message: `Fetched GA data: ${results.fetched} posts, ${results.updated} updated`,
@@ -130,7 +130,7 @@ export async function GET(request: NextRequest) {
     console.error('Error in fetch-ga-data:', error);
 
     // エラーログを記録
-    supabase.from('logs').insert({
+    await supabase.from('logs').insert({
       level: 'error',
       endpoint: '/api/fetch-ga-data',
       message: error instanceof Error ? error.message : 'Unknown error',

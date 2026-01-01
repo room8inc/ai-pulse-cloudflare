@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
     // 各スコアをraw_eventsテーブルに保存
     for (const score of scores) {
       // 重複チェック（同じモデルで最新のデータが既に存在するか）
-      const { data: existing } = supabase
+      const { data: existing } = await supabase
         .from('raw_events')
         .select('id')
         .eq('source', 'arena')
@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
       };
 
       // raw_eventsテーブルに挿入
-      const { error: insertError } = supabase.from('raw_events').insert({
+      const { error: insertError } = await supabase.from('raw_events').insert({
         id: generateId(),
         source: 'arena',
         source_type: 'arena',
@@ -66,14 +66,14 @@ export async function GET(request: NextRequest) {
       if (insertError) {
         console.error(`Error inserting Arena score for ${score.model}:`, insertError);
         results.failed++;
-        results.errors.push(`${score.model}: ${insertError.message}`);
+        results.errors.push(`${score.model}: ${String(insertError)}`);
       } else {
         results.success++;
       }
     }
 
     // ログを記録
-    supabase.from('logs').insert({
+    await supabase.from('logs').insert({
       level: results.failed > 0 ? 'warning' : 'info',
       endpoint: '/api/fetch-arena',
       message: `Fetched ${results.success} Arena scores, ${results.failed} failed`,
@@ -104,7 +104,7 @@ export async function GET(request: NextRequest) {
     console.error('Error in fetch-arena:', error);
 
     // エラーログを記録
-    supabase.from('logs').insert({
+    await supabase.from('logs').insert({
       level: 'error',
       endpoint: '/api/fetch-arena',
       message: error instanceof Error ? error.message : 'Unknown error',

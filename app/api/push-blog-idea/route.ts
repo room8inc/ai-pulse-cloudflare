@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
     }
 
     // blog_ideasテーブルに挿入
-    const { error: insertError } = supabase.from('blog_ideas').insert({
+    const { error: insertError } = await supabase.from('blog_ideas').insert({
       title,
       summary: summary || null,
       content: content || null,
@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
     }
 
     // ログを記録
-    supabase.from('logs').insert({
+    await supabase.from('logs').insert({
       level: 'info',
       endpoint: '/api/push-blog-idea',
       message: `Blog idea created: ${title}`,
@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
     console.error('Error in push-blog-idea:', error);
 
     // エラーログを記録
-    supabase.from('logs').insert({
+    await supabase.from('logs').insert({
       level: 'error',
       endpoint: '/api/push-blog-idea',
       message: error instanceof Error ? error.message : 'Unknown error',

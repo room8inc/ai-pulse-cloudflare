@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
     const clearedTables: string[] = [];
     for (const table of tablesToClear) {
       try {
-        const { error } = supabase.from(table).delete().neq('id', ''); // すべてのデータを削除
+        const { error } = await supabase.from(table).delete().neq('id', ''); // すべてのデータを削除
         if (error) {
           console.error(`Error clearing ${table}:`, error);
         } else {
@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
     }
 
     // ログに記録
-    supabase.from('logs').insert({
+    await supabase.from('logs').insert({
       level: 'info',
       endpoint: '/api/clear-and-refetch',
       message: `Cleared tables: ${clearedTables.join(', ')}`,
@@ -97,7 +97,7 @@ export async function POST(request: NextRequest) {
     console.error('Error in clear-and-refetch:', error);
     
     // ログに記録
-    supabase.from('logs').insert({
+    await supabase.from('logs').insert({
       level: 'error',
       endpoint: '/api/clear-and-refetch',
       message: error.message,
@@ -138,7 +138,7 @@ export async function DELETE(request: NextRequest) {
     const clearedTables: string[] = [];
     for (const table of tablesToClear) {
       try {
-        const { error } = supabase.from(table).delete().neq('id', ''); // すべてのデータを削除
+        const { error } = await supabase.from(table).delete().neq('id', ''); // すべてのデータを削除
         if (error) {
           console.error(`Error clearing ${table}:`, error);
         } else {
@@ -150,7 +150,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // ログに記録
-    supabase.from('logs').insert({
+    await supabase.from('logs').insert({
       level: 'info',
       endpoint: '/api/clear-and-refetch',
       message: `Cleared tables: ${clearedTables.join(', ')}`,

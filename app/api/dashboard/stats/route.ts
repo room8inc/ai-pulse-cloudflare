@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
     today.setHours(0, 0, 0, 0);
     const todayStart = today.toISOString();
 
-    const { data: todayEvents } = db
+    const { data: todayEvents } = await db
       .from('raw_events')
       .select('id')
       .gte('created_at', todayStart)
@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
     // 最新の公式アップデート・メディア情報（過去7日間、created_atでソート）
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-    const { data: recentOfficial } = db
+    const { data: recentOfficial } = await db
       .from('raw_events')
       .select('*')
       .in('source_type', ['official', 'media'])
@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
       .all();
 
     // 最新のコミュニティの声（過去7日間、created_atでソート）
-    const { data: recentVoices } = db
+    const { data: recentVoices } = await db
       .from('user_voices')
       .select('*')
       .gte('created_at', sevenDaysAgo.toISOString())
@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
     }
 
     // ブログ候補の数
-    const { data: blogIdeas } = db
+    const { data: blogIdeas } = await db
       .from('blog_ideas')
       .select('*')
       .all();
@@ -63,7 +63,7 @@ export async function GET(request: NextRequest) {
     const approvedIdeas = blogIdeas?.filter((idea: any) => idea.status === 'approved') || [];
 
     // 最新のトレンド（過去7日間、成長率が高い順）
-    const { data: recentTrends } = db
+    const { data: recentTrends } = await db
       .from('trends')
       .select('*')
       .gte('created_at', sevenDaysAgo.toISOString())
@@ -99,7 +99,7 @@ export async function GET(request: NextRequest) {
       .slice(0, 1)[0];
 
     // 過去記事のパフォーマンス（人気記事トップ5）
-    const { data: popularPosts } = db
+    const { data: popularPosts } = await db
       .from('blog_posts')
       .select('*')
       .all();

@@ -68,7 +68,7 @@ export async function GET(request: NextRequest) {
           }
           
           // 重複チェック（URLが既に存在するか）
-          const { data: existing } = supabase
+          const { data: existing } = await supabase
             .from('raw_events')
             .select('id')
             .eq('url', item.url)
@@ -93,7 +93,7 @@ export async function GET(request: NextRequest) {
           const rawEventId = generateId();
 
           // raw_eventsテーブルに挿入
-          const { error: rawEventError } = supabase.from('raw_events').insert({
+          const { error: rawEventError } = await supabase.from('raw_events').insert({
             id: rawEventId,
             source: item.source,
             source_type: 'community',
@@ -115,7 +115,7 @@ export async function GET(request: NextRequest) {
           }
 
           // user_voicesテーブルにも挿入（要約用）
-          const { error: userVoiceError } = supabase.from('user_voices').insert({
+          const { error: userVoiceError } = await supabase.from('user_voices').insert({
             source: item.source,
             platform: item.platform,
             title: item.title,
@@ -147,7 +147,7 @@ export async function GET(request: NextRequest) {
     }
 
     // ログを記録
-    supabase.from('logs').insert({
+    await supabase.from('logs').insert({
       level: results.failed > 0 ? 'warning' : 'info',
       endpoint: '/api/fetch-community',
       message: `Fetched ${results.success} items, ${results.failed} failed`,
@@ -173,7 +173,7 @@ export async function GET(request: NextRequest) {
     console.error('Error in fetch-community:', error);
 
     // エラーログを記録
-    supabase.from('logs').insert({
+    await supabase.from('logs').insert({
       level: 'error',
       endpoint: '/api/fetch-community',
       message: error instanceof Error ? error.message : 'Unknown error',

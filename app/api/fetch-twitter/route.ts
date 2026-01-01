@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
     if (!bearerToken) {
       // 認証情報が未設定の場合は、フォールバック動作として空の結果を返す
       // ログに警告を記録
-      supabase.from('logs').insert({
+      await supabase.from('logs').insert({
         level: 'warning',
         endpoint: '/api/fetch-twitter',
         message: 'TWITTER_BEARER_TOKEN is not set. Twitter data fetching skipped.',
@@ -133,7 +133,7 @@ export async function GET(request: NextRequest) {
           
           // 重複チェック
           const tweetUrl = `https://twitter.com/i/web/status/${tweet.id}`;
-          const { data: existing } = supabase
+          const { data: existing } = await supabase
             .from('raw_events')
             .select('id')
             .eq('url', tweetUrl)
@@ -157,7 +157,7 @@ export async function GET(request: NextRequest) {
           const rawEventId = generateId();
 
           // raw_eventsとuser_voicesに保存
-          const { error: rawEventError } = supabase.from('raw_events').insert({
+          const { error: rawEventError } = await supabase.from('raw_events').insert({
             id: rawEventId,
             source: 'twitter',
             source_type: 'twitter',
@@ -183,7 +183,7 @@ export async function GET(request: NextRequest) {
           // user_voices用のIDを生成
           const userVoiceId = generateId();
 
-          const { error: userVoiceError } = supabase.from('user_voices').insert({
+          const { error: userVoiceError } = await supabase.from('user_voices').insert({
             id: userVoiceId,
             source: 'twitter',
             platform: 'twitter',
@@ -217,7 +217,7 @@ export async function GET(request: NextRequest) {
     }
 
     // ログを記録
-    supabase.from('logs').insert({
+    await supabase.from('logs').insert({
       level: results.failed > 0 ? 'warning' : 'info',
       endpoint: '/api/fetch-twitter',
       message: `Fetched ${results.success} tweets, ${results.failed} failed`,
@@ -243,7 +243,7 @@ export async function GET(request: NextRequest) {
     console.error('Error in fetch-twitter:', error);
 
     // エラーログを記録
-    supabase.from('logs').insert({
+    await supabase.from('logs').insert({
       level: 'error',
       endpoint: '/api/fetch-twitter',
       message: error instanceof Error ? error.message : 'Unknown error',

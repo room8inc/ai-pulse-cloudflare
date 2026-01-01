@@ -163,7 +163,7 @@ export async function GET(request: NextRequest) {
           if (insertError) {
             console.error(`Error inserting item from ${feed.name}:`, insertError);
             results.failed++;
-            results.errors.push(`${feed.name}: ${insertError.message}`);
+            results.errors.push(`${feed.name}: ${String(insertError)}`);
           } else {
             results.success++;
           }

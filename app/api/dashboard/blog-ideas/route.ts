@@ -17,10 +17,10 @@ export async function GET(request: NextRequest) {
       // 現時点では全件取得
     }
 
-    const { data: ideas } = query.all();
+    const { data: ideas } = await query.all();
 
     // 各ブログ候補の元ネタ（URL）を取得
-    const ideasWithSources = (ideas || []).map((idea: any) => {
+    const ideasWithSources = await Promise.all((ideas || []).map(async (idea: any) => {
       let sourceUrls: Array<{ title: string; url: string; source: string }> = [];
       
       try {
@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
           // sourceIdがURLの場合は、URLで検索
           let rawEvent = null;
           if (sourceId.startsWith('http')) {
-            const { data: events } = db
+            const { data: events } = await db
               .from('raw_events')
               .select('title, url, source')
               .eq('url', sourceId)
@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
             rawEvent = events && events.length > 0 ? events[0] : null;
           } else {
             // IDの場合は通常通り検索
-            const result = db
+            const result = await db
               .from('raw_events')
               .select('title, url, source')
               .eq('id', sourceId)
@@ -59,16 +59,16 @@ export async function GET(request: NextRequest) {
           // user_voicesからも取得（raw_eventsにない場合）
           let userVoice = null;
           if (sourceId.startsWith('http')) {
-            const { data: voices } = db
+            const { data: voices } = await db
               .from('user_voices')
               .select('title, url, source')
               .eq('url', sourceId)
               .all();
             userVoice = voices && voices.length > 0 ? voices[0] : null;
           } else {
-            const result = db
+            const result = await db
               .from('user_voices')
-              .select('title, url, source')
+              .select('source, summary, sentiment, created_at')
               .eq('id', sourceId)
               .single();
             userVoice = result.data;
@@ -106,7 +106,7 @@ export async function GET(request: NextRequest) {
         recommended_keywords: recommendedKeywords,
         seo_recommendations: seoRecommendations,
       };
-    });
+    }));
 
     // 優先度と推奨度でソート
     const sortedIdeas = ideasWithSources.sort((a: any, b: any) => {
@@ -153,7 +153,7 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    const { error } = db.from('blog_ideas').update({ status }).eq('id', id);
+    const { error } = await db.from('blog_ideas').update({ status }).eq('id', id);
 
     if (error) {
       throw error;

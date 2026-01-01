@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
     const sevenDaysAgoStart = sevenDaysAgo.toISOString();
 
     // 公式情報・メディア情報（過去7日間、新しい順）
-    const { data: official } = supabase
+    const { data: official } = await supabase
       .from('raw_events')
       .select('*')
       .in('source_type', ['official', 'media'])
@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
     }
 
     // コミュニティの声（過去7日間、新しい順）
-    const { data: community } = supabase
+    const { data: community } = await supabase
       .from('user_voices')
       .select('*')
       .gte('created_at', sevenDaysAgoStart)
@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
     }
 
     // 最新のトレンド（過去7日間）
-    const { data: trends } = supabase
+    const { data: trends } = await supabase
       .from('trends')
       .select('*')
       .gte('created_at', sevenDaysAgoStart)
@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
     // Search Consoleの検索クエリ（過去30日間、人気順）
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    const { data: searchQueries } = supabase
+    const { data: searchQueries } = await supabase
       .from('search_queries')
       .select('*')
       .gte('date', thirtyDaysAgo.toISOString().split('T')[0])
@@ -81,7 +81,7 @@ export async function GET(request: NextRequest) {
       .slice(0, 20);
 
     // 人気記事（過去のパフォーマンス）
-    const { data: popularPosts } = supabase
+    const { data: popularPosts } = await supabase
       .from('blog_posts')
       .select('*')
       .all();
@@ -92,14 +92,14 @@ export async function GET(request: NextRequest) {
       .slice(0, 10);
 
     // AI分析結果を取得（これから狙うべきキーワード、記事戦略、市場のギャップ）
-    const { data: aiRecommendedKeywords } = supabase
+    const { data: aiRecommendedKeywords } = await supabase
       .from('trends')
       .select('*')
       .eq('trend_type', 'ai_recommended_keyword')
       .gte('created_at', sevenDaysAgoStart)
       .all();
 
-    const { data: aiStrategy } = supabase
+    const { data: aiStrategy } = await supabase
       .from('trends')
       .select('*')
       .eq('trend_type', 'ai_strategy')
@@ -171,7 +171,7 @@ export async function GET(request: NextRequest) {
 
       const ideaId = generateId();
 
-      const { error } = supabase.from('blog_ideas').insert({
+      const { error } = await supabase.from('blog_ideas').insert({
         id: ideaId,
         title: idea.title,
         summary: idea.summary,
@@ -195,7 +195,7 @@ export async function GET(request: NextRequest) {
     }
 
     // ログを記録
-    supabase.from('logs').insert({
+    await supabase.from('logs').insert({
       level: 'info',
       endpoint: '/api/summarize-today',
       message: `Generated ${createdIdeas.length} blog ideas`,
@@ -224,7 +224,7 @@ export async function GET(request: NextRequest) {
     console.error('Error in summarize-today:', error);
 
     // エラーログを記録
-    supabase.from('logs').insert({
+    await supabase.from('logs').insert({
       level: 'error',
       endpoint: '/api/summarize-today',
       message: error instanceof Error ? error.message : 'Unknown error',

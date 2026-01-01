@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
 
   try {
     // 過去記事のパフォーマンスデータを取得
-    const { data: blogPosts } = supabase
+    const { data: blogPosts } = await supabase
       .from('blog_posts')
       .select('*')
       .all();
@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
     // 検索クエリデータを取得（過去30日間）
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    const { data: searchQueries } = supabase
+    const { data: searchQueries } = await supabase
       .from('search_queries')
       .select('*')
       .gte('date', thirtyDaysAgo.toISOString().split('T')[0])
@@ -74,7 +74,7 @@ export async function GET(request: NextRequest) {
     };
 
     // ログを記録
-    supabase.from('logs').insert({
+    await supabase.from('logs').insert({
       level: 'info',
       endpoint: '/api/analyze-blog-performance',
       message: `Analyzed ${popularPosts.length} popular posts and ${topQueries.length} top queries`,
@@ -97,7 +97,7 @@ export async function GET(request: NextRequest) {
     console.error('Error in analyze-blog-performance:', error);
 
     // エラーログを記録
-    supabase.from('logs').insert({
+    await supabase.from('logs').insert({
       level: 'error',
       endpoint: '/api/analyze-blog-performance',
       message: error instanceof Error ? error.message : 'Unknown error',

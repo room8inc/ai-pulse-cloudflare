@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
 
     if (!siteUrl || !credentials) {
       // 認証情報が未設定の場合は、フォールバック動作として空の結果を返す
-      supabase.from('logs').insert({
+      await supabase.from('logs').insert({
         level: 'warning',
         endpoint: '/api/fetch-search-console',
         message: 'Search Console credentials not configured. Search Console data fetching skipped.',
@@ -69,7 +69,7 @@ export async function GET(request: NextRequest) {
       };
 
       // 重複チェック（同じクエリと日付の組み合わせ）
-      const { data: existing } = supabase
+      const { data: existing } = await supabase
         .from('search_queries')
         .select('id')
         .eq('query', query.query)
@@ -93,7 +93,7 @@ export async function GET(request: NextRequest) {
         }
       } else {
         // 新規の場合は挿入
-        const { error } = supabase.from('search_queries').insert({
+        const { error } = await supabase.from('search_queries').insert({
           id: generateId(),
           query: query.query,
           impressions: query.impressions,
@@ -116,7 +116,7 @@ export async function GET(request: NextRequest) {
     };
 
     // ログを記録
-    supabase.from('logs').insert({
+    await supabase.from('logs').insert({
       level: 'info',
       endpoint: '/api/fetch-search-console',
       message: `Fetched Search Console data: ${results.fetched} queries, ${results.saved} saved`,
@@ -132,7 +132,7 @@ export async function GET(request: NextRequest) {
     console.error('Error in fetch-search-console:', error);
 
     // エラーログを記録
-    supabase.from('logs').insert({
+    await supabase.from('logs').insert({
       level: 'error',
       endpoint: '/api/fetch-search-console',
       message: error instanceof Error ? error.message : 'Unknown error',

@@ -21,14 +21,14 @@ export async function GET(request: NextRequest) {
     const fourteenDaysAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
 
     // 過去7日間のデータ
-    const { data: currentEvents } = supabase
+    const { data: currentEvents } = await supabase
       .from('raw_events')
       .select('*')
       .gte('created_at', sevenDaysAgo.toISOString())
       .all();
 
     // その前の7日間のデータ（比較用）
-    const { data: previousEvents } = supabase
+    const { data: previousEvents } = await supabase
       .from('raw_events')
       .select('*')
       .gte('created_at', fourteenDaysAgo.toISOString())
@@ -36,14 +36,14 @@ export async function GET(request: NextRequest) {
       .all();
 
     // 過去7日間のコミュニティの声
-    const { data: currentVoices } = supabase
+    const { data: currentVoices } = await supabase
       .from('user_voices')
       .select('*')
       .gte('created_at', sevenDaysAgo.toISOString())
       .all();
 
     // その前の7日間のコミュニティの声（比較用）
-    const { data: previousVoices } = supabase
+    const { data: previousVoices } = await supabase
       .from('user_voices')
       .select('*')
       .gte('created_at', fourteenDaysAgo.toISOString())
@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
       .all();
 
     // Search Consoleの検索クエリを取得（ユーザーが実際に検索しているキーワード）
-    const { data: searchQueries } = supabase
+    const { data: searchQueries } = await supabase
       .from('search_queries')
       .select('*')
       .gte('date', sevenDaysAgo.toISOString().split('T')[0])
@@ -84,7 +84,7 @@ export async function GET(request: NextRequest) {
       };
 
       // trendsテーブルに保存
-      const { error } = supabase.from('trends').insert({
+      const { error } = await supabase.from('trends').insert({
         id: generateId(),
         keyword,
         trend_type: 'keyword',
@@ -125,7 +125,7 @@ export async function GET(request: NextRequest) {
           .toLowerCase();
       };
 
-      supabase.from('trends').insert({
+      await supabase.from('trends').insert({
         id: generateId(),
         keyword: 'total_mentions',
         trend_type: 'mention_count',
@@ -156,7 +156,7 @@ export async function GET(request: NextRequest) {
           .toLowerCase();
       };
 
-      supabase.from('trends').insert({
+      await supabase.from('trends').insert({
         id: generateId(),
         keyword: `sentiment_${sentimentTrend.sentiment}`,
         trend_type: 'sentiment',
@@ -206,7 +206,7 @@ export async function GET(request: NextRequest) {
     let aiAnalysis = null;
     try {
       // 過去記事のパフォーマンスデータを取得
-      const { data: blogPosts } = supabase
+      const { data: blogPosts } = await supabase
         .from('blog_posts')
         .select('*')
         .all();
@@ -238,7 +238,7 @@ export async function GET(request: NextRequest) {
 
       // 推奨キーワードを保存
       for (const keyword of aiAnalysis.recommended_keywords) {
-        supabase.from('trends').insert({
+        await supabase.from('trends').insert({
           id: generateId(),
           keyword: keyword.keyword,
           trend_type: 'ai_recommended_keyword',
@@ -259,7 +259,7 @@ export async function GET(request: NextRequest) {
       }
 
       // 記事戦略を保存
-      supabase.from('trends').insert({
+      await supabase.from('trends').insert({
         id: generateId(),
         keyword: 'ai_strategy_recommendations',
         trend_type: 'ai_strategy',
@@ -281,7 +281,7 @@ export async function GET(request: NextRequest) {
     }
 
     // ログを記録
-    supabase.from('logs').insert({
+    await supabase.from('logs').insert({
       level: 'info',
       endpoint: '/api/analyze-trends',
       message: `Analyzed trends: ${trends.length} rising keywords detected${aiAnalysis ? ', AI analysis completed' : ''}`,
@@ -307,7 +307,7 @@ export async function GET(request: NextRequest) {
     console.error('Error in analyze-trends:', error);
 
     // エラーログを記録
-    supabase.from('logs').insert({
+    await supabase.from('logs').insert({
       level: 'error',
       endpoint: '/api/analyze-trends',
       message: error instanceof Error ? error.message : 'Unknown error',
