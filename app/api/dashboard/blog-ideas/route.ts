@@ -49,9 +49,9 @@ export async function GET(request: NextRequest) {
           
           if (rawEvent && rawEvent.url) {
             sourceUrls.push({
-              title: rawEvent.title || '元ネタ',
-              url: rawEvent.url,
-              source: rawEvent.source || 'unknown',
+              title: (rawEvent.title as string) || '元ネタ',
+              url: rawEvent.url as string,
+              source: (rawEvent.source as string) || 'unknown',
             });
             continue; // 見つかったら次へ
           }
@@ -76,9 +76,9 @@ export async function GET(request: NextRequest) {
           
           if (userVoice && userVoice.url) {
             sourceUrls.push({
-              title: userVoice.title || '元ネタ',
-              url: userVoice.url,
-              source: userVoice.source || 'unknown',
+              title: (userVoice.title as string) || '元ネタ',
+              url: userVoice.url as string,
+              source: (userVoice.source as string) || 'unknown',
             });
           }
         }

@@ -3,6 +3,8 @@
  * Supabase互換APIを提供
  */
 
+import type { D1Database } from '@cloudflare/workers-types';
+
 // Cloudflare Workers/Pages環境でのD1バインディング型定義
 interface Env {
   DB: D1Database;

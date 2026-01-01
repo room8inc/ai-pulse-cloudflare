@@ -78,7 +78,7 @@ export async function GET(request: NextRequest) {
 
       if (existing) {
         // 既存の場合は更新
-        const { error } = supabase
+        const { error } = await supabase
           .from('search_queries')
           .update({
             impressions: query.impressions,
