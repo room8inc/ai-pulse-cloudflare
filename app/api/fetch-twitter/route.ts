@@ -1,3 +1,5 @@
+export const runtime = "edge";
+
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseClient } from '@/lib/db';
 import { MONITORED_TWITTER_ACCOUNTS, getUserIds } from '@/lib/twitter-accounts';

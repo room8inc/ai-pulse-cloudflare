@@ -1,3 +1,5 @@
+export const runtime = "edge";
+
 import { NextRequest, NextResponse } from 'next/server';
 import { initDatabase } from '@/lib/init-db';
 import { createSupabaseClient } from '@/lib/db';
