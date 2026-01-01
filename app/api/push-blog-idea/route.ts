@@ -11,7 +11,14 @@ export async function POST(request: NextRequest) {
   const supabase = createSupabaseClient(env);
 
   try {
-    const body = await request.json();
+    const body = await request.json() as {
+      title?: string;
+      summary?: string;
+      content?: string;
+      sources?: any[];
+      priority?: string;
+      recommendation_score?: number;
+    };
     const { title, summary, content, sources, priority, recommendation_score } = body;
 
     if (!title) {

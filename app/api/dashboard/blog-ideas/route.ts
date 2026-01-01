@@ -175,7 +175,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     const db = createSupabaseClient(env);
-    const body = await request.json();
+    const body = await request.json() as { id?: string; status?: string };
     const { id, status } = body;
 
     if (!id || !status) {
