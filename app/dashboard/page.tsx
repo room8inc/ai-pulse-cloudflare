@@ -39,6 +39,14 @@ interface FetchStatus {
   };
 }
 
+interface ApiResponse<T = any> {
+  success: boolean;
+  data?: T;
+  error?: string;
+  debug?: string;
+  message?: string;
+}
+
 export default function DashboardPage() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [blogIdeas, setBlogIdeas] = useState<BlogIdea[]>([]);
@@ -57,14 +65,14 @@ export default function DashboardPage() {
 
       // 統計データを取得
       const statsResponse = await fetch('/api/dashboard/stats');
-      const statsResult = await statsResponse.json();
+      const statsResult = await statsResponse.json() as ApiResponse<Stats>;
       if (statsResult.success) {
-        setStats(statsResult.data);
+        setStats(statsResult.data || null);
       }
 
       // ブログ候補を取得
       const ideasResponse = await fetch('/api/dashboard/blog-ideas');
-      const ideasResult = await ideasResponse.json();
+      const ideasResult = await ideasResponse.json() as ApiResponse<BlogIdea[]>;
       if (ideasResult.success) {
         setBlogIdeas(ideasResult.data || []);
       } else {
@@ -86,7 +94,7 @@ export default function DashboardPage() {
 
     try {
       const response = await fetch(endpoint);
-      const result = await response.json();
+      const result = await response.json() as ApiResponse;
 
       if (result.success) {
         setFetchStatus((prev) => ({
@@ -135,7 +143,7 @@ export default function DashboardPage() {
         body: JSON.stringify({ id, status }),
       });
 
-      const result = await response.json();
+      const result = await response.json() as ApiResponse;
       if (result.success) {
         // 状態を更新
         setBlogIdeas((prev) =>
