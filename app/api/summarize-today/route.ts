@@ -153,7 +153,18 @@ export async function GET(request: NextRequest) {
       trends: trends || [],
       searchQueries: topQueries,
       popularPosts: topPosts,
-      aiAnalysis: aiAnalysis,
+      aiAnalysis: {
+        ...aiAnalysis,
+        recommendedKeywords: (aiAnalysis.recommendedKeywords || [])
+          .filter((k: any) => k !== null && typeof k === 'object')
+          .map((k: any) => ({
+            keyword: String(k.keyword || ''),
+            reason: String(k.reason || ''),
+            opportunity_score: Number(k.opportunity_score || 0),
+            competition_level: String(k.competition_level || 'medium'),
+            suggested_article_type: String(k.suggested_article_type || 'guide')
+          })),
+      },
     });
 
     // ブログ候補をDBに登録

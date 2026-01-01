@@ -283,7 +283,7 @@ export async function analyzeTrendsWithGemini(
     model: 'gemini-2.5-flash',
     generationConfig: {
       responseMimeType: 'application/json',
-    },
+    } as any,
   });
 
   // データを整理

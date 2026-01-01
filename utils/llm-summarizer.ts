@@ -381,7 +381,7 @@ async function generateWithGemini(input: SummaryInput): Promise<{
     model: 'gemini-2.5-flash',
     generationConfig: {
       responseMimeType: 'application/json',
-    },
+    } as any,
   });
 
   const prompt = generatePrompt(input);
@@ -419,7 +419,7 @@ async function generateWithGemini(input: SummaryInput): Promise<{
           model: 'gemini-3.0-pro',
           generationConfig: {
             responseMimeType: 'application/json',
-          },
+          } as any,
         });
         const result = await fallbackModel.generateContent(prompt);
         const response = await result.response;

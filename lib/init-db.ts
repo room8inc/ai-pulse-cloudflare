@@ -1,3 +1,6 @@
+import type { D1Database } from '@cloudflare/workers-types';
+import { createSupabaseClient } from './db';
+
 /**
  * Cloudflare D1データベースを初期化（スキーマを適用）
  */

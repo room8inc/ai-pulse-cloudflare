@@ -226,7 +226,7 @@ function extractDynamicKeywords(
       const words = title
         .replace(/[^\w\s]/g, ' ')
         .split(/\s+/)
-        .filter((w) => w.length > 2 && !stopWords.has(w));
+        .filter((w: string) => w.length > 2 && !stopWords.has(w));
 
       // 2語のフレーズを抽出
       for (let i = 0; i < words.length - 1; i++) {
@@ -345,7 +345,7 @@ function extractTitleKeywords(
       const words = title
         .replace(/[^\w\s]/g, ' ')
         .split(/\s+/)
-        .filter((w) => w.length > 3 && !stopWords.has(w));
+        .filter((w: string) => w.length > 3 && !stopWords.has(w));
 
       for (const word of words) {
         // 大文字で始まる単語（固有名詞の可能性が高い）を優先
