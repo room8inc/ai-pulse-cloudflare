@@ -29,7 +29,7 @@ export async function fetchReddit(subreddit: string, url: string): Promise<Commu
       throw new Error(`Reddit API Error: ${response.status}`);
     }
 
-    const data = await response.json();
+    const data = await response.json() as any;
     const posts = data.data?.children || [];
 
     return posts
@@ -73,7 +73,7 @@ export async function fetchHackerNews(keywords: string[]): Promise<CommunityItem
         continue; // エラー時はスキップ
       }
 
-      const data = await response.json();
+      const data = await response.json() as any;
       const hits = data.hits || [];
 
       for (const hit of hits) {
@@ -125,7 +125,7 @@ export async function fetchHuggingFace(): Promise<CommunityItem[]> {
           continue;
         }
 
-        const discussions = await response.json();
+        const discussions = await response.json() as any;
 
         if (Array.isArray(discussions)) {
           for (const discussion of discussions.slice(0, 10)) {
@@ -174,7 +174,7 @@ export async function fetchGitHubIssues(repo: string): Promise<CommunityItem[]> 
       throw new Error(`GitHub API Error: ${response.status}`);
     }
 
-    const issues = await response.json();
+    const issues = await response.json() as any;
 
     return issues
       .filter((issue: any) => !issue.pull_request) // PRは除外
