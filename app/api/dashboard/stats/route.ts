@@ -2,7 +2,12 @@ export const runtime = "edge";
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseClient } from '@/lib/db';
-import type { D1Database } from '@cloudflare/workers-types';
+import { getRequestContext } from '@cloudflare/next-on-pages';
+
+// CloudflareEnvインターフェースを定義
+interface CloudflareEnv {
+  DB: any; // D1Database
+}
 
 /**
  * ダッシュボード用の統計データを取得するAPI
@@ -10,16 +15,26 @@ import type { D1Database } from '@cloudflare/workers-types';
 export async function GET(request: NextRequest) {
   try {
     // Cloudflare Pages環境でのD1バインディング取得
-    const env = (request as any).env as { DB?: D1Database };
+    // @cloudflare/next-on-pagesの公式APIを使用
+    let env: CloudflareEnv | undefined;
+    
+    try {
+      const context = getRequestContext();
+      env = context.env as CloudflareEnv;
+    } catch (contextError) {
+      console.error('getRequestContext failed:', contextError);
+      // フォールバック: request.envから取得を試みる
+      env = (request as any).env as CloudflareEnv | undefined;
+    }
 
     // デバッグログ
     if (!env?.DB) {
-      console.error('D1 Binding "DB" not found in request.env');
+      console.error('D1 Binding "DB" not found. env:', JSON.stringify(Object.keys(env || {})));
       return NextResponse.json(
         {
           success: false,
           error: 'Database connection not configured',
-          debug: 'D1 binding not found'
+          debug: `D1 binding not found. Available env keys: ${JSON.stringify(Object.keys(env || {}))}`
         },
         { status: 500 }
       );

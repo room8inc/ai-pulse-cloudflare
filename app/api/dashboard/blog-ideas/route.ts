@@ -2,7 +2,12 @@ export const runtime = "edge";
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseClient } from '@/lib/db';
-import type { D1Database } from '@cloudflare/workers-types';
+import { getRequestContext } from '@cloudflare/next-on-pages';
+
+// CloudflareEnvインターフェースを定義
+interface CloudflareEnv {
+  DB: any; // D1Database
+}
 
 /**
  * ブログ候補一覧を取得するAPI
@@ -10,10 +15,18 @@ import type { D1Database } from '@cloudflare/workers-types';
 export async function GET(request: NextRequest) {
   try {
     // Cloudflare Pages環境でのD1バインディング取得
-    const env = (request as any).env as { DB?: D1Database };
+    let env: CloudflareEnv | undefined;
+    
+    try {
+      const context = getRequestContext();
+      env = context.env as CloudflareEnv;
+    } catch (contextError) {
+      console.error('getRequestContext failed:', contextError);
+      env = (request as any).env as CloudflareEnv | undefined;
+    }
 
     if (!env?.DB) {
-       console.error('D1 Binding "DB" not found in request.env');
+       console.error('D1 Binding "DB" not found');
        return NextResponse.json({ success: true, data: [] });
     }
 
@@ -154,10 +167,18 @@ export async function GET(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   try {
     // Cloudflare Pages環境でのD1バインディング取得
-    const env = (request as any).env as { DB?: D1Database };
+    let env: CloudflareEnv | undefined;
+    
+    try {
+      const context = getRequestContext();
+      env = context.env as CloudflareEnv;
+    } catch (contextError) {
+      console.error('getRequestContext failed:', contextError);
+      env = (request as any).env as CloudflareEnv | undefined;
+    }
 
     if (!env?.DB) {
-       console.error('D1 Binding "DB" not found in request.env');
+       console.error('D1 Binding "DB" not found');
        return NextResponse.json(
         { success: false, error: 'Database connection failed' },
         { status: 500 }
