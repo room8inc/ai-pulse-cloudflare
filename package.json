@@ -23,7 +23,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.20.0",
-    "@cloudflare/next-on-pages": "^1.12.3",
+    "@cloudflare/next-on-pages": "1.12.3",
     "@cloudflare/workers-types": "^4.20240222.0",
     "@google-analytics/data": "^5.2.1",
     "@google/generative-ai": "^0.2.1",
