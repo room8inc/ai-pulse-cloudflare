@@ -20,8 +20,14 @@ export async function GET(request: NextRequest) {
     }
 
     // デバッグログ
+    console.log('Available env keys:', Object.keys(env));
+    console.log('DB binding exists:', !!env.DB);
+    console.log('DB type:', typeof env.DB);
+
     if (!env.DB) {
       console.error('D1 Binding "DB" not found in environment variables.');
+      console.error('Env object:', JSON.stringify(env, null, 2));
+      throw new Error('D1 database binding not found. Please check Cloudflare Pages dashboard.');
     }
 
     const db = createSupabaseClient(env);
